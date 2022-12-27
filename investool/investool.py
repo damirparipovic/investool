@@ -1,3 +1,7 @@
+import stock
+import portfolio
+import manager
+
 def main():
 
     print("Main called.")
