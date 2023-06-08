@@ -6,31 +6,28 @@ class Portfolio:
         self.totalValue = 0
 
     def getStockTickers(self) -> list[str]:
-        return [x.getTicker() for x in self.stocks]
+        return [s.ticker for s in self.stocks]
 
     def addStock(self, stock: Stock) -> None:
-        if stock.getTicker() not in self.getStockTickers():
+        if stock.ticker not in self.getStockTickers():
             stock.updatePrice()
             self.stocks.append(stock)
-        else:
-            print("Stock already exists in portfolio.")
 
     def getAllStocks(self) -> list[Stock]:
         return self.stocks
 
     def getStock(self, ticker: str) -> Stock:
         for i, stock in enumerate(self.stocks):
-            if ticker == stock.getTicker():
+            if ticker == stock.ticker:
                 return self.stocks[i]
-        raise ValueError("The provided ticker does not exist in the portfolio.")
+        raise KeyError("The provided ticker does not exist in the portfolio.")
 
     def updateAllPrices(self) -> None:
         for stock in self.stocks:
             stock.updatePrice()
 
     def updateTotalValue(self) -> None:
-        for stock in self.stocks:
-            self.totalValue = self.totalValue + stock.getValue()
+            self.totalValue = sum(s.stockValue for s in self.stocks)
 
     def printStocks(self) -> None:
         for stock in self.stocks:

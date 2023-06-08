@@ -1,5 +1,6 @@
 import yfinance as yf
 import re
+import requests
 
 FORM="""
 -------------------
@@ -25,11 +26,7 @@ class Stock:
         return FORM.format(self._ticker, self._price, self._units, self._percent, self._stockValue)
 
     def __repr__(self) -> str:
-        return f"Stock(ticker={self._ticker}, \
-                price={self._price}, \
-                units={self._units}), \
-                percent={self._percent}, \
-                stockValue={self._stockValue}"
+        return f"Stock('{self._ticker}', '{self._price}', '{self._units}', '{self._percent}', '{self._stockValue}')"
 
     @property
     def ticker(self) -> str:
@@ -68,7 +65,9 @@ class Stock:
     @percent.setter
     def percent(self, value: float) -> None:
         if value < 0:
-            raise ValueError("Percnet cannot be less than 0.")
+            raise ValueError("Percent cannot be less than 0.")
+        if value > 1:
+            raise ValueError("Percent cannot be greater than 1.")
         self._percent = value
 
     @property
@@ -81,27 +80,35 @@ class Stock:
             raise ValueError("Stock can't have a value less than 0.")
         self._stockValue = value
 
-    def updatePrice(self) -> float | None:
+    def getCurrentPrice(self) -> float | None:
+        currentPrice = None
         try:
-            stock_info = yf.Ticker(self.ticker).info
-            marketPrice = stock_info.get('regularMarketPrice')
-            if marketPrice == None:
-                raise ValueError()
+            stockInfo = yf.Ticker(self.ticker).info
+            if stockInfo == None:
+                raise ValueError
+            else:
+                currentPrice = stockInfo.get("currentPrice")
+        except requests.HTTPError:
+            print(f"Invalid ticker code {self.ticker} or unable to get request.")
         except ValueError:
-            print(f"Invalid ticker code {self.ticker}.")
-            return None
+            print(f"Returned value is invalid.")
         else:
-            self._price = marketPrice
-            self.updateValue()
-            return self.price
+            return currentPrice
+
+    def updatePrice(self) -> None:
+        currentPrice = self.getCurrentPrice()
+        if currentPrice == None:
+            return
+        self.price = currentPrice
 
     def updateValue(self) -> None:
         self.stockValue = self._price * self._units
 
     def validTicker(self, ticker: str) -> bool:
-        res = re.search(TICKER_PATTERN, ticker)
-        if res:
-            return True
-        else:
+        if len(ticker) < 1:
             return False
-
+        res = re.match(TICKER_PATTERN, ticker)
+        if res == None or res.group(0) != ticker:
+            return False
+        else:
+            return True
