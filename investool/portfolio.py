@@ -3,7 +3,7 @@ from .stock import Stock
 class Portfolio:
     def __init__(self, portfolioName='new', stocks=list(), totalValue=0.0):
         self._portfolioName: str = portfolioName
-        self._stocks: list = stocks
+        self._stocks: list[Stock] = stocks
         self._totalValue: float = totalValue
 
     def __str__(self) -> str:
@@ -11,7 +11,7 @@ class Portfolio:
         return form.format(self._portfolioName, self._stocks, self._totalValue)
 
     def __repr__(self) -> str:
-        return f"Portfolio('{self.portfolioName}', '{self._stocks}', '{self._totalValue}')"
+        return f"Portfolio('{self.portfolioName}', {self._stocks}, {self._totalValue})"
 
     @property
     def portfolioName(self) -> str:

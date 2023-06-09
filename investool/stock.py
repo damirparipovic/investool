@@ -26,7 +26,7 @@ class Stock:
         return FORM.format(self._ticker, self._price, self._units, self._percent, self._stockValue)
 
     def __repr__(self) -> str:
-        return f"Stock('{self._ticker}', '{self._price}', '{self._units}', '{self._percent}', '{self._stockValue}')"
+        return f"Stock('{self._ticker}', {self._price}, {self._units}, {self._percent}, {self._stockValue})"
 
     @property
     def ticker(self) -> str:
