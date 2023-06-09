@@ -28,6 +28,20 @@ class Stock:
     def __repr__(self) -> str:
         return f"Stock('{self._ticker}', {self._price}, {self._units}, {self._percent}, {self._stockValue})"
 
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Stock):
+            return NotImplemented
+        if (self._ticker == other._ticker and
+            self._price == other._price and
+            self._units == other._units and
+            self._percent == other._percent and
+            self._stockValue == other._stockValue):
+            return True
+        return False
+
+    def __hash__(self) -> int:
+        return hash((self._ticker, self._price, self._units, self._percent, self._stockValue))
+
     @property
     def ticker(self) -> str:
         return self._ticker
