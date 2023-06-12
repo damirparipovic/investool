@@ -13,7 +13,7 @@ def empty_stock():
     return stock.Stock()
 
 def test_prints(msft_stock):
-    assert repr(msft_stock) == "Stock('msft', '123.45', '10', '0.3', '0')"
+    assert repr(msft_stock) == "Stock('msft', 123.45, 10, 0.3, 0)"
     assert str(msft_stock) == stock.FORM.format(msft_stock.ticker,
                                                 msft_stock.price,
                                                 msft_stock.units,
@@ -22,10 +22,8 @@ def test_prints(msft_stock):
 
 def test_ticker(msft_stock, empty_stock):
     assert msft_stock.ticker == 'msft'
-
     empty_stock.ticker = 'goog'
     assert empty_stock.ticker == 'goog'
-
     with pytest.raises(Exception):
         empty_stock.ticker = ''
     with pytest.raises(Exception):
@@ -33,13 +31,31 @@ def test_ticker(msft_stock, empty_stock):
     with pytest.raises(Exception):
         empty_stock.ticker = '12345'
 
+def tes_equality(msft_stock, empty_stock):
+    # equality assert empty_stock == stock.Stock()
+    assert msft_stock == stock.Stock('msft', 123.45, 10, 0.3, 0)
+    # not equali
+    assert empty_stock != msft_stock
+    assert msft_stock != stock.Stock('m', 123.45, 10, 0.3, 0)
+    assert msft_stock != stock.Stock('msft', 1.45, 10, 0.3, 0)
+    assert msft_stock != stock.Stock('msft', 123.45, 9, 0.3, 0)
+    assert msft_stock != stock.Stock('msft', 123.45, 10, 0.2, 0)
+    assert msft_stock != stock.Stock('msft', 123.45, 10, 0.3, 1)
+
+
+def test_hash(msft_stock, empty_stock):
+    assert hash(empty_stock) == hash(stock.Stock())
+    assert hash(msft_stock) == hash(stock.Stock('msft', 123.45, 10, 0.3, 0))
+    assert hash(msft_stock) != hash(stock.Stock('msft', 123.00, 10, 0.3, 0))
+    assert hash(msft_stock) != hash(stock.Stock('msft', 123.45, 9, 0.3, 0))
+
 def test_price(msft_stock, empty_stock):
     assert msft_stock.price == MSFT_STOCK_PRICE
 
     empty_stock.price = 200.0
     assert empty_stock.price == 200.0
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         empty_stock.price = -20
 
 def test_units(msft_stock, empty_stock):
