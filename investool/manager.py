@@ -1,28 +1,38 @@
-from portfolio import Portfolio
-from stock import Stock
+from .portfolio import Portfolio
+from .stock import Stock
 from pathlib import Path
 import json
 
 class PortfolioManager():
 
     DEFAULTPATH = Path("..", "portfolios")
-    VALIDCONFIRMATIONS = {"yes", "y"}
 
-    def __init__(self):
-        self.currentPortfolio = Portfolio()
+    def __init__(self, portfolio=Portfolio()):
+        self._currentPortfolio = portfolio
 
-    def createStock(self, ticker: str, units: int, percent: float,) -> Stock:
-        newStock = Stock(ticker, 0, units, percent);
+    @property
+    def currentPortfolio(self) -> Portfolio:
+        return self._currentPortfolio
+    
+    @currentPortfolio.setter
+    def currentPortfolio(self, newPortfolio:Portfolio) -> None:
+        self._currentPortfolio = newPortfolio
+
+    def createStock(self, ticker: str, units: int, percent: float) -> Stock:
+        newStock = Stock(ticker, 0, units, percent, 0);
         newStock.updatePrice()
         newStock.updateValue()
         return newStock
+
+    def addStockToPortfolio(self, ticker: str, units: int, percent: float) -> None:
+        newStock = self.createStock(ticker, units, percent)
+        self.currentPortfolio.addStock(newStock)
 
     # load a portfolio
     def loadPortfolio(self, portfolioName: str) -> None:
         currFilePath = Path(self.DEFAULTPATH, portfolioName)
         if not currFilePath.exists():
-            print("given portfolio doesn't exist. Nothing loaded")
-            return
+            raise FileNotFoundError("file does not exist.")
         self.currentPortfolio = json.loads(currFilePath.read_text())
 
     # save a portfolio
@@ -35,6 +45,7 @@ class PortfolioManager():
             currFilePath.touch(exist_ok=False)
         currFilePath.write_text(json.dumps(self.currentPortfolio))
 
+    # this should be in UI
     def confirmWrite(self) -> bool:
         confirmation = input("Are you sure you want to overwrite?[y/n]: ")
         if confirmation in self.VALIDCONFIRMATIONS:
@@ -44,5 +55,13 @@ class PortfolioManager():
 
 
     # check for dir and files
+    # might not need
+    def fileExists(self, portfolioName: str) -> bool:
+        pass
 
     # rebalance portfolio
+    def rebalanceSellBuy(self):
+        pass
+
+    def rebalanceOnlyBuy(self):
+        pass

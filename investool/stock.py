@@ -99,13 +99,11 @@ class Stock:
         try:
             stockInfo = yf.Ticker(self.ticker).info
             if stockInfo == None:
-                raise ValueError
+                raise ValueError("Returned value is invalid.")
             else:
                 currentPrice = stockInfo.get("currentPrice")
         except requests.HTTPError:
-            print(f"Invalid ticker code {self.ticker} or unable to get request.")
-        except ValueError:
-            print(f"Returned value is invalid.")
+            raise requests.HTTPError(f"Invalid ticker code {self.ticker} or unable to get request.")
         else:
             return currentPrice
 

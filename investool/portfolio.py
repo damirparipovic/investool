@@ -66,9 +66,6 @@ class Portfolio:
                 return
         raise ValueError(f"{ticker} not in portfolio.")
 
-    def getAllStocks(self) -> list[Stock]:
-        return self._stocks
-
     def updateAllStockPrices(self) -> None:
         for stock in self._stocks:
             stock.updatePrice()
@@ -83,7 +80,3 @@ class Portfolio:
         if updateValues:
             self.updateAllStockValues()
         self._totalValue = sum(s.stockValue for s in self._stocks)
-
-    def printStocks(self) -> None:
-        for stock in self._stocks:
-            print(stock)
