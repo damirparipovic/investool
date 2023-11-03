@@ -1,4 +1,4 @@
-from .stock import Stock
+from stock import Stock
 
 class Portfolio:
     def __init__(self, portfolioName='new', stocks=list(), totalValue=0.0):
@@ -12,6 +12,16 @@ class Portfolio:
 
     def __repr__(self) -> str:
         return f"Portfolio('{self.portfolioName}', {self._stocks}, {self._totalValue})"
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Portfolio):
+            return NotImplemented
+        if (self._portfolioName == other._portfolioName and
+            self._stocks == other._stocks and
+            self._totalValue == other._totalValue):
+            return True
+        else:
+            return False
 
     @property
     def portfolioName(self) -> str:
@@ -80,3 +90,8 @@ class Portfolio:
         if updateValues:
             self.updateAllStockValues()
         self._totalValue = sum(s.stockValue for s in self._stocks)
+
+    def updatePortfolio(self) -> None:
+        self.updateAllStockPrices()
+        self.updateAllStockValues()
+        self.updateTotalPortfolioValue()

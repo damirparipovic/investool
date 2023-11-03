@@ -9,8 +9,7 @@ Stock ticker: {}
  - units: {}
  - percent: {}
  - value: {}
--------------------
-"""
+-------------------"""
 
 TICKER_PATTERN = "[a-zA-Z]{1,4}(\.[a-zA-Z]{0,2})?"
 

@@ -1,7 +1,7 @@
-from .portfolio import Portfolio
-from .stock import Stock
+from portfolio import Portfolio
+from stock import Stock
 from pathlib import Path
-import json
+import pickle
 
 class PortfolioManager():
 
@@ -28,22 +28,34 @@ class PortfolioManager():
         newStock = self.createStock(ticker, units, percent)
         self.currentPortfolio.addStock(newStock)
 
-    # load a portfolio
-    def loadPortfolio(self, portfolioName: str) -> None:
-        currFilePath = Path(self.DEFAULTPATH, portfolioName)
+    def renamePortfolio(self, newName: str) -> None:
+        self.currentPortfolio.portfolioName = newName
+
+    def getFilePath(self, fileName: str) -> Path:
+        return Path(self.DEFAULTPATH, fileName)
+
+    def loadPortfolio(self, fileName: str) -> None:
+        currFilePath = self.getFilePath(fileName)
         if not currFilePath.exists():
             raise FileNotFoundError("file does not exist.")
-        self.currentPortfolio = json.loads(currFilePath.read_text())
+        with open(currFilePath, 'rb') as f:
+            self.currentPortfolio = pickle.load(f)
 
-    # save a portfolio
-    def savePortfolio(self, portfolioName: str) -> None:
-        currFilePath = Path(self.DEFAULTPATH, portfolioName)
-        if currFilePath.exists() and self.confirmWrite():
-            print("Portfolio not saved (overwritten).")
-            return
+    def checkFileExists(self, fileName: str) -> bool:
+        currFilePath = self.getFilePath(fileName)
+        return currFilePath.exists()
+
+    def savePortfolio(self, fileName: str, confirmOverwrite: bool=False) -> None:
+        currFilePath = self.getFilePath(fileName)
+        if currFilePath.exists() and not confirmOverwrite:
+            # so we want to save and not overwrite. So get the portfolioName
+            # and append date to save file
+            currFilePath.touch(exist_ok=False) # raises FileExistsError
+            # need to create new file (ask for new filename or append date)
         else:
-            currFilePath.touch(exist_ok=False)
-        currFilePath.write_text(json.dumps(self.currentPortfolio))
+            currFilePath.touch()
+        with open(currFilePath, 'wb') as f:
+            pickle.dump(self.currentPortfolio, f, pickle.HIGHEST_PROTOCOL)
 
     # this should be in UI
     def confirmWrite(self) -> bool:
@@ -52,12 +64,6 @@ class PortfolioManager():
             return True
         else:
             return False
-
-
-    # check for dir and files
-    # might not need
-    def fileExists(self, portfolioName: str) -> bool:
-        pass
 
     # rebalance portfolio
     def rebalanceSellBuy(self):
