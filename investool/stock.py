@@ -96,11 +96,11 @@ class Stock:
     def getCurrentPrice(self) -> float | None:
         currentPrice = None
         try:
-            stockInfo = yf.Ticker(self.ticker).info
+            stockInfo = yf.Ticker(self.ticker).fast_info
             if stockInfo == None:
                 raise ValueError("Returned value is invalid.")
             else:
-                currentPrice = stockInfo.get("currentPrice")
+                currentPrice = stockInfo.get("lastPrice")
         except requests.HTTPError:
             raise requests.HTTPError(f"Invalid ticker code {self.ticker} or unable to get request.")
         else:
