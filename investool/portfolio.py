@@ -1,4 +1,4 @@
-from stock import Stock
+from .stock import Stock
 
 class Portfolio:
     def __init__(self, portfolioName='new', stocks=list(), totalValue=0.0):

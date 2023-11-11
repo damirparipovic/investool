@@ -1,5 +1,5 @@
-from portfolio import Portfolio
-from stock import Stock
+from .portfolio import Portfolio
+from .stock import Stock
 from pathlib import Path
 import pickle
 

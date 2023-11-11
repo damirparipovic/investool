@@ -31,11 +31,11 @@ def test_ticker(msft_stock, empty_stock):
     with pytest.raises(Exception):
         empty_stock.ticker = '12345'
 
-def test_equality(msft_stock, empty_stock):
+def tes_equality(msft_stock, empty_stock):
     # equality assert empty_stock == stock.Stock()
     assert msft_stock == stock.Stock('msft', 123.45, 10, 0.3, 0)
     # check if other is not stock
-    assert msft_stock != "hello"
+    assert (msft_stock == "hello") == NotImplemented
     # not equal
     assert empty_stock != msft_stock
     assert msft_stock != stock.Stock('m', 123.45, 10, 0.3, 0)

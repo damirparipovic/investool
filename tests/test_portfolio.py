@@ -1,6 +1,6 @@
 import pytest
-from investool.portfolio import Portfolio
 from investool.stock import Stock
+from investool.portfolio import Portfolio
 
 @pytest.fixture()
 def standard_portfolio():
