@@ -1,7 +1,7 @@
 from .stock import Stock
 
 class Portfolio:
-    def __init__(self, portfolioName='new', stocks=list(), totalValue=0.0):
+    def __init__(self, portfolioName='', stocks=list(), totalValue=0.0):
         self._portfolioName: str = portfolioName
         self._stocks: list[Stock] = stocks
         self._totalValue: float = totalValue

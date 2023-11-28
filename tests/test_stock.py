@@ -1,4 +1,5 @@
 import pytest
+from requests import HTTPError
 from investool import stock
 
 MSFT_STOCK_PRICE = 123.45
@@ -12,8 +13,10 @@ def msft_stock():
 def empty_stock():
     return stock.Stock()
 
-def test_prints(msft_stock):
+def test_repr_print(msft_stock):
     assert repr(msft_stock) == "Stock('msft', 123.45, 10, 0.3, 0)"
+
+def test_str_print(msft_stock):
     assert str(msft_stock) == stock.FORM.format(msft_stock.ticker,
                                                 msft_stock.price,
                                                 msft_stock.units,
@@ -22,8 +25,12 @@ def test_prints(msft_stock):
 
 def test_ticker(msft_stock, empty_stock):
     assert msft_stock.ticker == 'msft'
+
+def test_set_ticker(empty_stock):
     empty_stock.ticker = 'goog'
     assert empty_stock.ticker == 'goog'
+
+def test_invalid_ticker(empty_stock):
     with pytest.raises(Exception):
         empty_stock.ticker = ''
     with pytest.raises(Exception):
@@ -34,16 +41,21 @@ def test_ticker(msft_stock, empty_stock):
 def test_equality(msft_stock, empty_stock):
     # equality assert empty_stock == stock.Stock()
     assert msft_stock == stock.Stock('msft', 123.45, 10, 0.3, 0)
-    # check if other is not stock
+
+def test_inequality_type(msft_stock):
+    # test if not same type
     assert msft_stock != "hello"
-    # not equal
+    assert msft_stock != 42
+
+def test_equality_two_stocks(empty_stock, msft_stock):
     assert empty_stock != msft_stock
+
+def test_equality_one_change(msft_stock):
     assert msft_stock != stock.Stock('m', 123.45, 10, 0.3, 0)
     assert msft_stock != stock.Stock('msft', 1.45, 10, 0.3, 0)
     assert msft_stock != stock.Stock('msft', 123.45, 9, 0.3, 0)
     assert msft_stock != stock.Stock('msft', 123.45, 10, 0.2, 0)
     assert msft_stock != stock.Stock('msft', 123.45, 10, 0.3, 1)
-
 
 def test_hash(msft_stock, empty_stock):
     assert hash(empty_stock) == hash(stock.Stock())
@@ -99,7 +111,7 @@ def test_stockValue(msft_stock, empty_stock):
         empty_stock.stockValue = "abc"
 
 def test_getCurrentPrice(msft_stock, empty_stock, mocker):
-    # check HTTP error caught by returning None
+    # check that returned empty object returns None
     assert empty_stock.getCurrentPrice() == None
 
     # check if value returned is None
@@ -110,6 +122,11 @@ def test_getCurrentPrice(msft_stock, empty_stock, mocker):
     # check if everything works as intended
     mockTicker.return_value.fast_info = {"lastPrice": MSFT_STOCK_PRICE}
     assert msft_stock.price == msft_stock.getCurrentPrice()
+
+    # check that HTTPError occurs and raises an HTTPError with custom details
+    with mocker.patch("investool.stock.yf.Ticker", side_effect=HTTPError):
+        with pytest.raises(HTTPError):
+            msft_stock.getCurrentPrice()
 
 def test_updatePrice(msft_stock, empty_stock, mocker):
     empty_stock.updatePrice() 
