@@ -2,7 +2,7 @@ import pytest
 from investool.stock import Stock
 from investool.portfolio import Portfolio
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def standard_portfolio():
     stocks = []
     stocks.append(Stock('msft', 10, 10, 0.5, 0))

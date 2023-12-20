@@ -1,17 +1,21 @@
-from math import exp
 import pytest
 from investool.manager import PortfolioManager, Portfolio, Stock
 from tests.test_portfolio import standard_portfolio
 
-'''
-    stocks.append(Stock('msft', 10, 10, 0.5, 0))
-    stocks.append(Stock('appl', 20, 10, 0.25, 0))
-    stocks.append(Stock('zag.to', 30, 10, 0.25, 0))
-'''
-
 @pytest.fixture
 def standard_manager(standard_portfolio):
     return PortfolioManager(standard_portfolio)
+
+@pytest.fixture(scope="function")
+def standard_manager_path(tmp_path, standard_manager):
+    test_dir = "temp_portfolios"
+
+    d = tmp_path / test_dir
+    d.mkdir()
+
+    standard_manager.DEFAULTPATH = d
+    return standard_manager
+
 
 @pytest.fixture
 def standard_manager_fixed_prices(standard_manager, mocker):
@@ -130,3 +134,24 @@ def test_sellStock_sell_too_many(standard_manager_fixed_prices):
     standard_manager_fixed_prices.sellStock(stock.ticker, quantity_to_sell)
 
     assert 0 == standard_manager_fixed_prices.getStock("msft").units
+
+def test_savePortfolio(standard_manager_path):
+    test_file = "test_save_portfolio"
+    res = standard_manager_path.savePortfolio(test_file)
+    assert res == True
+    assert standard_manager_path.checkFileExists(test_file) == True
+
+def test_loadPortfolio(standard_manager_path):
+    test_file = "test_save_portfolio"
+    with pytest.raises(FileNotFoundError):
+        res = standard_manager_path.loadPortfolio(test_file)
+        assert res == False
+
+    res = standard_manager_path.savePortfolio(test_file)
+    assert res == True
+
+    new_manager = PortfolioManager()
+    new_manager.DEFAULTPATH = standard_manager_path.DEFAULTPATH
+    new_manager.loadPortfolio(test_file)
+
+    assert new_manager.currentPortfolio == standard_manager_path.currentPortfolio
