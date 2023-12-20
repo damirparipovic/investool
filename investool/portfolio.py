@@ -1,4 +1,4 @@
-from .stock import Stock
+from stock import Stock
 
 class Portfolio:
     def __init__(self, portfolioName='', stocks=list(), totalValue=0.0):
@@ -63,12 +63,6 @@ class Portfolio:
             stock.updatePrice()
             self._stocks.append(stock)
 
-    def getStock(self, ticker: str) -> Stock:
-        for i, stock in enumerate(self._stocks):
-            if ticker == stock.ticker:
-                return self._stocks[i]
-        raise ValueError("The provided ticker does not exist in the portfolio.")
-
     def removeStock(self, ticker: str) -> None:
         for stock in self._stocks:
             if stock.ticker == ticker:
@@ -92,6 +86,4 @@ class Portfolio:
         self._totalValue = sum(s.stockValue for s in self._stocks)
 
     def updatePortfolio(self) -> None:
-        self.updateAllStockPrices()
-        self.updateAllStockValues()
         self.updateTotalPortfolioValue()

@@ -75,11 +75,12 @@ class UI:
 
     def startupMenu(self) -> None:
         # choose option and setup the self.manager accordingly
-        validChoices = [1,2,3]
-        print("Would you like to laod a saved portfolio or create a new portfolio?")
-        print(" - 1) load existing portfolio")
-        print(" - 2) create new portfolio")
-        print(" - 3) exit application")
+        validChoices = [1,2,3,4]
+        print("Select an option below:")
+        print(" - 1) list all portfolios")
+        print(" - 2) load existing portfolio")
+        print(" - 3) create new portfolio")
+        print(" - 4) exit application")
         while True:
             try:
                 choice = int(input("provide your choice (1, 2, or 3): "))
@@ -94,11 +95,11 @@ class UI:
         
         match choice:
             case 1:
-                self.choosePortfolio()
+                self.listPortfolios()
             case 2:
-                self.createNewPortfolio()
+                self.choosePortfolio()
             case 3:
-                exit(0)
+                self.createNewPortfolio()
             case _:
                 exit(1) #should never execute
 
@@ -106,7 +107,7 @@ class UI:
         print("---- Main Menu ----")
         print("Please choose an option below:")
         print(" 0 - info")
-        print(" 1 - rebalance (only buy)")
+        print(" 1 - rebalance portfolio")
         print(" 2 - add stock")
         print(" 3 - remove stock")
         print(" 4 - buy stock")
@@ -117,8 +118,11 @@ class UI:
         command = 'cls' if os.name == 'nt' else 'clear'
         os.system(command)
 
-    def printPortfolio(self) -> None:
+    def printCurrentPortfolio(self) -> None:
         stockList = self.manager.currentPortfolio.stocks
+        # if no portfolio chosen and currently have new portfolio
+        if self.manager.currentPortfolio == portfolio.Portfolio():
+            return
         print(f"Portfolio: {self.manager.currentPortfolio.portfolioName}")
         print("Stocks:")
         for stock in stockList:
@@ -128,7 +132,7 @@ class UI:
     def run(self):
         self.introPrompt()
         self.startupMenu()
-        self.printPortfolio()
+        self.printCurrentPortfolio()
         input("Press any key to continue.")
         self.clearScreen()
         while True:

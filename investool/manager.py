@@ -1,11 +1,15 @@
-from .portfolio import Portfolio
-from .stock import Stock
+import datetime
+import math
 from pathlib import Path
 import pickle
 
+from portfolio import Portfolio
+from stock import Stock
+
 class PortfolioManager():
 
-    DEFAULTPATH = Path("..", "portfolios")
+    MANAGER_LOCATION = Path(__file__).absolute().parent
+    DEFAULTPATH = Path(MANAGER_LOCATION, "..", "portfolios")
 
     def __init__(self, portfolio=Portfolio()):
         self._currentPortfolio = portfolio
@@ -28,46 +32,173 @@ class PortfolioManager():
         newStock = self.createStock(ticker, units, percent)
         self.currentPortfolio.addStock(newStock)
 
+    def removeStockFromPortfolio(self, ticker: str) -> None:
+        if ticker not in self.currentPortfolio.getStockTickers():
+            raise ValueError("Stock not in portfolio! Cannot remove stock.")
+        stock = self.getStock(ticker)
+        self.currentPortfolio.stocks.remove(stock)
+
     def renamePortfolio(self, newName: str) -> None:
         self.currentPortfolio.portfolioName = newName
 
     def getFilePath(self, fileName: str) -> Path:
+        fileName = fileName + '.pickle'
         return Path(self.DEFAULTPATH, fileName)
 
-    def loadPortfolio(self, fileName: str) -> None:
+    def loadPortfolio(self, fileName: str) -> bool:
         currFilePath = self.getFilePath(fileName)
         if not currFilePath.exists():
             raise FileNotFoundError("file does not exist.")
-        with open(currFilePath, 'rb') as f:
-            self.currentPortfolio = pickle.load(f)
+        try:
+            with open(currFilePath, 'rb') as f:
+                self.currentPortfolio = pickle.load(f)
+        except IOError:
+            return False
+        return True
 
     def checkFileExists(self, fileName: str) -> bool:
         currFilePath = self.getFilePath(fileName)
         return currFilePath.exists()
 
-    def savePortfolio(self, fileName: str, confirmOverwrite: bool=False) -> None:
+    def savePortfolio(self, fileName: str, overwrite: bool=False) -> bool:
         currFilePath = self.getFilePath(fileName)
-        if currFilePath.exists() and not confirmOverwrite:
-            # so we want to save and not overwrite. So get the portfolioName
-            # and append date to save file
-            currFilePath.touch(exist_ok=False) # raises FileExistsError
-            # need to create new file (ask for new filename or append date)
-        else:
-            currFilePath.touch()
-        with open(currFilePath, 'wb') as f:
-            pickle.dump(self.currentPortfolio, f, pickle.HIGHEST_PROTOCOL)
+        if currFilePath.exists() and not overwrite:
+            timeStamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            newFileName = f"{fileName}_{timeStamp}"
+            currFilePath = self.getFilePath(newFileName)
 
-    # this should be in UI
-    def confirmWrite(self) -> bool:
-        confirmation = input("Are you sure you want to overwrite?[y/n]: ")
-        if confirmation in self.VALIDCONFIRMATIONS:
+        try:
+            with open(currFilePath, 'wb') as f:
+                pickle.dump(self.currentPortfolio, f, pickle.HIGHEST_PROTOCOL)
             return True
-        else:
+        except IOError:
             return False
 
-    # rebalance portfolio
-    def rebalanceSellBuy(self):
-        pass
+    def validPercentageTotal(self) -> bool:
+        if int(self.currentPortfolio.getTotalPercent()):
+            return False
+        return True
 
-    def rebalanceOnlyBuy(self):
-        pass
+    def changePercentage(self, stockTicker: str, percent: float) -> None:
+        if percent > 100:
+            raise ValueError("Percent for any one stock cannot be > 100.")
+        self.currentPortfolio.getStock(stockTicker).percent = percent
+
+    # rebalance portfolio
+    def _calculateAllocationDifference(self) -> dict[Stock, int]:
+        # calculate how many units need to be sold (-ve val) and 
+        # purchased (+ve val)
+        self.currentPortfolio.updatePortfolio()
+
+        totalValue = self.currentPortfolio.totalValue
+
+        # for each stock find how many units we should have based on target
+        # percent of totalValue
+        stocksUnitDifference = {}
+        for stock in self.currentPortfolio.stocks:
+            newUnitCount = round((stock.percent * totalValue) / stock.price)
+            stockUnitDiff = newUnitCount - stock.units
+            stocksUnitDifference[stock] = stockUnitDiff
+        return stocksUnitDifference
+
+    def calculateRebalanceSellBuy(self, liquidCash: float = 0.0) -> dict[Stock, int]:
+        '''
+        Function will calculate how to rebalance a portfolio by selling and
+        then buying stocks. If there is not enough cash there will be some
+        cash remaining. If there is liquid Cash available before the rebalance
+        then it will be used to allow for complete rebalancing.
+        The function takes into consideration the fact that stocks can only
+        be sold as in whole units.
+
+        Returns a dictionary of stocks as keys and how many units to sell (-ve)
+        and buy (+ve) for each stock
+        '''
+        stocksUnitDifference = self._calculateAllocationDifference()
+
+        sellList = [stock for stock in stocksUnitDifference.items() if stock[1] < 0]
+        sellList.sort(key=lambda x: x[1])
+        buyList = [stock for stock in stocksUnitDifference.items() if stock[1] >= 0]
+        buyList.sort(key=lambda x: x[1], reverse=True)
+
+        totalCash = liquidCash
+        for stock, units in sellList:
+            totalCash += (-1 * units) * stock.price
+            
+        # need a new buyList because values could change, depending on price
+        finalBuyList = []
+        for stock, units in buyList:
+            cost = units * stock.price
+            if cost > totalCash:
+                units = int(totalCash/stock.price)
+            totalCash -= units * stock.price
+            finalBuyList.append((stock, units))
+        print(totalCash)
+
+        return dict(sellList + finalBuyList)
+
+    def cashRemaining(self, buySellMap: dict[Stock, int], liquidCash: float = 0.0) -> float:
+        rem = liquidCash
+        for stock, units in buySellMap.items():
+            rem -= units * stock.price
+        return rem
+
+    def calculateRebalanceBuyOnly(self, liquidCash: float = 0.0) -> dict[Stock, int]:
+        stocksUnitDifference = self._calculateAllocationDifference()
+
+        # only purchase stocks that are most skewed away from target percentages
+        buyList = [stock for stock in stocksUnitDifference.items() if stock[1] >= 0]
+        buyList.sort(key=lambda x: x[1], reverse=True)
+        
+        modifiedBuyList = []
+
+        for i in range(len(buyList)):
+            stock = buyList[i][0]
+            units = buyList[i][1]
+            cashNeeded = units * stock.price
+            
+            if cashNeeded > liquidCash:
+                units = int(liquidCash/stock.price)
+            liquidCash -= units * stock.price
+            modifiedBuyList.append((stock, units))
+
+        return dict(modifiedBuyList)
+
+    def rebalanceSellBuy(self, liquidCash: float = 0.0):
+        rebalanceMap = self.calculateRebalanceSellBuy(liquidCash)
+
+        for stock, units in rebalanceMap.items():
+            if units > 0:
+                self.buyStock(stock.ticker, units)
+            elif units < 0:
+                self.sellStock(stock.ticker, units)
+
+    def rebalanceOnlyBuy(self, liquidCash: float = 0.0):
+        rebalanceMap = self.calculateRebalanceSellBuy(liquidCash)
+
+        for stock, units in rebalanceMap.items():
+            if units > 0:
+                self.buyStock(stock.ticker, units)
+
+    def getStock(self, stockTicker: str) -> Stock:
+        for i, stock in enumerate(self.currentPortfolio.stocks):
+            if stockTicker == stock.ticker:
+                return self.currentPortfolio.stocks[i]
+        raise ValueError("The provided ticker does not exist in the portfolio.")
+
+    def buyStock(self, stockTicker: str, quantity: int) -> int:
+        # when quantity < 0 we are selling
+        if stockTicker not in self.currentPortfolio.getStockTickers(): 
+            raise ValueError(f"stock {stockTicker} is not in the portfolio")
+
+        stock = self.getStock(stockTicker)
+        stock.units += quantity
+
+    def sellStock(self, stockTicker: str, quantity) -> int:
+        if stockTicker not in self.currentPortfolio.getStockTickers(): 
+            raise ValueError(f"stock {stockTicker} is not in the portfolio")
+        
+        stock = self.getStock(stockTicker)
+        if quantity > stock.units:
+            stock.units = 0
+        else:
+            stock.units -= quantity
