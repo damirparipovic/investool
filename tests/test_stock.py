@@ -23,7 +23,7 @@ def test_str_print(msft_stock):
                                                 msft_stock.percent,
                                                 msft_stock.stockValue)
 
-def test_ticker(msft_stock, empty_stock):
+def test_ticker(msft_stock):
     assert msft_stock.ticker == 'msft'
 
 def test_set_ticker(empty_stock):
@@ -38,7 +38,7 @@ def test_invalid_ticker(empty_stock):
     with pytest.raises(Exception):
         empty_stock.ticker = '12345'
 
-def test_equality(msft_stock, empty_stock):
+def test_equality(msft_stock):
     # equality assert empty_stock == stock.Stock()
     assert msft_stock == stock.Stock('msft', 123.45, 10, 0.3, 0)
 

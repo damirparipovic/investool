@@ -1,7 +1,7 @@
 import manager
-import portfolio
+from portfolio import Portfolio
+from stock import Stock
 import os
-from pathlib import Path
 
 class UI:
     def __init__(self):
@@ -42,15 +42,11 @@ class UI:
                     print("Please provide a valid selection.")
                     continue
                 # make sure choice exists and load it 
-                try:
-                    res = self.loadPortfolio(listOfOptions[choice])
-                except FileNotFoundError:
-                    print("The file does not exist.") #should happen
+                res = self.loadPortfolio(listOfOptions[choice])
                 if res:
                     break
                 else:
                     print("There was an error loading the portfolio. Please try again.")
-
 
     def listPortfolios(self) -> list[str]:
         # shows list of portfolios and returns the list
@@ -73,7 +69,7 @@ class UI:
             else:
                 self.manager.renamePortfolio(newPortfolioName)
 
-    def startupMenu(self) -> None:
+    def startupMenu(self) -> int:
         # choose option and setup the self.manager accordingly
         validChoices = [1,2,3,4]
         print("Select an option below:")
@@ -81,62 +77,189 @@ class UI:
         print(" - 2) load existing portfolio")
         print(" - 3) create new portfolio")
         print(" - 4) exit application")
+
         while True:
             try:
-                choice = int(input("provide your choice (1, 2, or 3): "))
-            except TypeError:
+                choice = int(input("provide your choice (1, 2, 3 or 4): "))
+            except (TypeError, ValueError):
                 print("Input is not a number. Please try again.")
                 continue
             if choice not in validChoices:
-                print("The provided choice is invalid (not 1, 2 or 3). Please try again.")
+                print("The provided choice is invalid (not 1, 2, 3 or 4). Please try again.")
                 continue
             else:
                 break
+
+        return choice
         
-        match choice:
-            case 1:
-                self.listPortfolios()
-            case 2:
-                self.choosePortfolio()
-            case 3:
-                self.createNewPortfolio()
-            case _:
-                exit(1) #should never execute
 
     def mainMenu(self) -> int:
-        print("---- Main Menu ----")
+        print("---- Portfolio Management  ----")
         print("Please choose an option below:")
-        print(" 0 - info")
-        print(" 1 - rebalance portfolio")
-        print(" 2 - add stock")
-        print(" 3 - remove stock")
-        print(" 4 - buy stock")
-        print(" 5 - sell stock")
-        pass
-    
-    def clearScreen(self) -> None:
-        command = 'cls' if os.name == 'nt' else 'clear'
-        os.system(command)
+        print(" 1 - portfolio information")
+        print(" 2 - rebalance portfolio (sell/buy)")
+        print(" 3 - rebalance portfolio (buy only)")
+        print(" 4 - add stock")
+        print(" 5 - remove stock")
+        print(" 6 - buy stock")
+        print(" 7 - sell stock")
+        print(" 8 - go back to startup menu")
+        print(" 9 - Exit")
 
-    def printCurrentPortfolio(self) -> None:
+        while True:
+            try: 
+                choice = int(input("Provide your choice:"))
+            except (TypeError, ValueError):
+                print("Input is not a valid number. Please Try again.")
+                continue
+            if choice < 1 or choice > 9:
+                print("The provided choice is invalid. Not within option range. Please Try Again.")
+                continue
+            else:
+                break
+        return choice
+
+    def printCurrentPortfolioInformation(self) -> None:
         stockList = self.manager.currentPortfolio.stocks
         # if no portfolio chosen and currently have new portfolio
-        if self.manager.currentPortfolio == portfolio.Portfolio():
+        if self.manager.currentPortfolio == Portfolio():
             return
-        print(f"Portfolio: {self.manager.currentPortfolio.portfolioName}")
+        print(f" -- Portfolio: {self.manager.currentPortfolio.portfolioName} -- ")
         print("Stocks:")
         for stock in stockList:
             print(stock)
         print(f"Total portfolio value: {self.manager.currentPortfolio.totalValue}")
 
-    def run(self):
-        self.introPrompt()
-        self.startupMenu()
-        self.printCurrentPortfolio()
-        input("Press any key to continue.")
-        self.clearScreen()
+    def getConfirmation(self) -> bool:
         while True:
-            # main loop. Show main menu and perform action based on choice
-            break
+            try:
+                inp = str(input("Would you like to continue with this rebalancing? (y/n): ")).lower()
+            except (TypeError, ValueError):
+                print("The input provided is invalid. Please try again.")
+                continue
+            else:
+                if inp == 'y' or inp == 'yes':
+                    return True
+                else:
+                    return False
 
+    def printHowUnitsHaveToChange(self, stockUnitMap: dict[Stock, int]) -> None:
+        print()
+        print("Showing how many units of each stock need to be sold or bought:")
+        # sell stocks
+        for stock, units in stockUnitMap.items():
+            if units < 0:
+                print(f"  - {stock.ticker} sell {units} units.")
+        # buy stocks
+        for stock, units in stockUnitMap.items():
+            if units >= 0:
+                print(f"  - {stock.ticker} buy {units} units.")
+
+    def UIrebalancePortfolioBuySell(self) -> None:
+        print(" -- Rebalancing Portfolio -- ")
+        print()
+        while True:
+            try:
+                liquidCash = input("Provide how much liquid cash is available for rebalancing: ")
+                if liquidCash == '' or liquidCash == '\n':
+                    liquidCash = 0
+                    break
+                else:
+                    liquidCash = int(liquidCash)
+            except (ValueError, TypeError):
+                print("The provided value is not valid.")
+                continue
+            if liquidCash < 0:
+                print("Cannot have negative values of liquidCash.")
+            else:
+                break
+
+        stocksUnitDifferences = self.manager.calculateRebalanceSellBuy(liquidCash)
+        print(stocksUnitDifferences)
+        self.printHowUnitsHaveToChange(stocksUnitDifferences)
+
+        if self.getConfirmation():
+            self.manager.rebalanceSellBuy(liquidCash)
+            remainingCash = self.manager.cashRemaining(stocksUnitDifferences, liquidCash)
+            print(f"Cash Remaining is after rebalancing is: {remainingCash}")
+        else:
+            print("Did not rebalance.")
+        print("Returning to previous menu.")
+        
+    def UIrebalancePortfolioBuyOnly(self) -> None:
+        pass
+
+    def UIaddStock(self) -> None:
+        pass
+
+    def UIremoveStock(self) -> None:
+        pass
+
+    def UIbuyStock(self) -> None:
+        pass
+
+    def UIsellStock(self) -> None:
+        pass
+
+    def clearScreen(self) -> None:
+        command = 'cls' if os.name == 'nt' else 'clear'
+        os.system(command)
+
+    def run(self) -> None:
+        self.introPrompt()
+        mainLoop = True
+        # Need to decide what to do on startup. After choice made go to main section
+        while mainLoop:
+            while True:
+
+                startupChoice = self.startupMenu()
+                match startupChoice:
+                    case 1:
+                        self.listPortfolios()
+                    case 2:
+                        self.choosePortfolio()
+                        break
+                    case 3:
+                        self.createNewPortfolio()
+                        break
+                    case 4:
+                        print("Exiting application!")
+                        exit(0)
+                    case _:
+                        exit(1) #should never execute
+                input("Press any key to continue.")
+                self.clearScreen()
+
+            # main section where changes are made to portfolio.
+            self.clearScreen()
+            while True:
+                # main loop. Show main menu and perform action based on choice
+                self.manager.currentPortfolio.updateTotalPortfolioValue()
+                mainChoice = self.mainMenu()
+
+                self.clearScreen()
+                match mainChoice:
+                    case 1:
+                        self.printCurrentPortfolioInformation()
+                    case 2:
+                        self.UIrebalancePortfolioBuySell()
+                    case 3:
+                        self.UIrebalancePortfolioBuyOnly()
+                    case 4:
+                        self.UIaddStock()
+                    case 5:
+                        self.UIremoveStock()
+                    case 6:
+                        self.UIbuyStock()
+                    case 7:
+                        self.UIsellStock()
+                    case 8:
+                        break # break out and go back to startupMenu
+                    case 9:
+                        print("Exiting Application")
+                        exit(0)
+                    case _:
+                        exit(1)
+                input("Press any key to continue.")
+                self.clearScreen()
         return

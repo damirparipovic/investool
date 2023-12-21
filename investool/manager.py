@@ -2,6 +2,8 @@ import datetime
 from pathlib import Path
 import pickle
 
+from _pytest.config import filename_arg
+
 from portfolio import Portfolio
 from stock import Stock
 
@@ -41,7 +43,8 @@ class PortfolioManager():
         self.currentPortfolio.portfolioName = newName
 
     def getFilePath(self, fileName: str) -> Path:
-        fileName = fileName + '.pickle'
+        if not fileName.endswith('.pickle'):
+            fileName = fileName + '.pickle'
         return Path(self.DEFAULTPATH, fileName)
 
     def loadPortfolio(self, fileName: str) -> bool:
@@ -135,12 +138,6 @@ class PortfolioManager():
 
         return dict(sellList + finalBuyList)
 
-    def cashRemaining(self, buySellMap: dict[Stock, int], liquidCash: float = 0.0) -> float:
-        rem = liquidCash
-        for stock, units in buySellMap.items():
-            rem -= units * stock.price
-        return rem
-
     def calculateRebalanceBuyOnly(self, liquidCash: float = 0.0) -> dict[Stock, int]:
         stocksUnitDifference = self._calculateAllocationDifference()
 
@@ -161,6 +158,12 @@ class PortfolioManager():
             modifiedBuyList.append((stock, units))
 
         return dict(modifiedBuyList)
+
+    def cashRemaining(self, buySellMap: dict[Stock, int], liquidCash: float = 0.0) -> float:
+        rem = liquidCash
+        for stock, units in buySellMap.items():
+            rem -= units * stock.price
+        return rem
 
     def rebalanceSellBuy(self, liquidCash: float = 0.0):
         rebalanceMap = self.calculateRebalanceSellBuy(liquidCash)
