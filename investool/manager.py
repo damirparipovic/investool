@@ -78,8 +78,8 @@ class PortfolioManager():
         currentPercentTotal = self.currentPortfolio.getTotalPercent()
         if currentPercentTotal > 1:
             return False
-        if round(currentPercentTotal) != 1:
-            return False
+        # if round(currentPercentTotal) != 1:
+        #     return False
         return True
 
     def changePercentage(self, stockTicker: str, percent: float) -> None:
@@ -87,12 +87,12 @@ class PortfolioManager():
             raise ValueError("Percent for any one stock cannot be > 100.")
         self.currentPortfolio.getStock(stockTicker).percent = percent
 
-    def _calculateAllocationDifference(self) -> dict[Stock, int]:
+    def _calculateAllocationDifference(self, liquidCash: float=0) -> dict[Stock, int]:
         # calculate how many units need to be sold (-ve val) and 
         # purchased (+ve val)
         self.currentPortfolio.updatePortfolio()
 
-        totalValue = self.currentPortfolio.totalValue
+        totalValue = self.currentPortfolio.totalValue + liquidCash
 
         # for each stock find how many units we should have based on target
         # percent of totalValue
@@ -115,7 +115,7 @@ class PortfolioManager():
         Returns a dictionary of stocks as keys and how many units to sell (-ve)
         and buy (+ve) for each stock
         '''
-        stocksUnitDifference = self._calculateAllocationDifference()
+        stocksUnitDifference = self._calculateAllocationDifference(liquidCash)
 
         sellList = [stock for stock in stocksUnitDifference.items() if stock[1] < 0]
         sellList.sort(key=lambda x: x[1])
@@ -138,7 +138,7 @@ class PortfolioManager():
         return dict(sellList + finalBuyList)
 
     def calculateRebalanceBuyOnly(self, liquidCash: float = 0.0) -> dict[Stock, int]:
-        stocksUnitDifference = self._calculateAllocationDifference()
+        stocksUnitDifference = self._calculateAllocationDifference(liquidCash)
 
         # only purchase stocks that are most skewed away from target percentages
         buyList = [stock for stock in stocksUnitDifference.items() if stock[1] >= 0]
@@ -202,4 +202,4 @@ class PortfolioManager():
         if quantity > stock.units:
             stock.units = 0
         else:
-            stock.units -= quantity
+            stock.units += quantity

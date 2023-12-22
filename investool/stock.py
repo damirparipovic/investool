@@ -116,6 +116,7 @@ class Stock:
     def updateValue(self) -> None:
         self.stockValue = self._price * self._units
 
+    @classmethod
     def validTicker(self, ticker: str) -> bool:
         if len(ticker) < 1:
             return False

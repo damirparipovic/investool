@@ -62,13 +62,14 @@ class UI:
 
     def createNewPortfolio(self) -> None:
         # should ask for a new name for portfolio
-        newPortfolioName = input("Provide a portfolio name: ")
         while True:
+            newPortfolioName = input("Provide a portfolio name: ")
             if self.manager.checkFileExists(newPortfolioName):
                 print("A portfolio with this name already exists. Please try again.")
                 continue
             else:
                 self.manager.renamePortfolio(newPortfolioName)
+                break
 
     def startupMenu(self) -> int:
         # choose option and setup the self.manager accordingly
@@ -101,7 +102,7 @@ class UI:
         print(" 2 - rebalance portfolio (sell/buy)")
         print(" 3 - rebalance portfolio (buy only)")
         print(" 4 - add stock")
-        print(" 5 - modify stock")
+        print(" 5 - remove stock")
         print(" 6 - buy stock")
         print(" 7 - sell stock")
         print(" 8 - go back (save optional)")
@@ -144,7 +145,7 @@ class UI:
                 else:
                     return False
 
-    def getValidNumberType(self, inputMessage: str, wantedType: type, lowerLimit: float=float('-inf'), upperLimit: float=float('inf')) -> float:
+    def getValidType(self, inputMessage: str, wantedType: type, lowerLimit: float=float('-inf'), upperLimit: float=float('inf')) -> float:
         while True:
             try:
                 inputValue = input(inputMessage)
@@ -179,7 +180,7 @@ class UI:
         print(" -- Rebalancing Portfolio (sell then buy) -- ")
         print()
         inputMessage = "Provide how much liquid cash is available for rebalancing: "
-        liquidCash = self.getValidNumberType(inputMessage, float, lowerLimit=0)
+        liquidCash = self.getValidType(inputMessage, float, lowerLimit=0)
 
         stocksUnitDifferences = self.manager.calculateRebalanceSellBuy(liquidCash)
         self.printHowUnitsHaveToChange(stocksUnitDifferences)
@@ -196,24 +197,23 @@ class UI:
         print(" -- Rebalancing Portfolio (buy only) -- ")
         print()
         inputMessage = "Provide how much liquid cash is available for rebalancing: "
-        liquidCash = self.getValidNumberType(inputMessage, float, lowerLimit=0)
+        liquidCash = self.getValidType(inputMessage, float, lowerLimit=0)
 
         stocksUnitDifferences = self.manager.calculateRebalanceBuyOnly(liquidCash)
         self.printHowUnitsHaveToChange(stocksUnitDifferences)
 
         if self.getConfirmation("Would you like to continue with this rebalancing? (y/n): "):
-            self.manager.rebalanceBuyOnly(liquidCash)
+            self.manager.rebalanceOnlyBuy(liquidCash)
             remainingCash = self.manager.cashRemaining(stocksUnitDifferences, liquidCash)
             print(f"Cash Remaining is after rebalancing is: {remainingCash:.2f}")
         else:
             print("Did not rebalance.")
         print("Returning to previous menu.")
 
-    def getValidTicker(self) -> str:
+    def getValidTicker(self, inputMessage) -> str:
         while True:
-            inputMessage = "Please provide a valid ticker: "
-            validStr = self.getValidNumberType(inputMessage, str)
-
+            validStr = self.getValidType(inputMessage, str)
+            print(f"validStr: {validStr}")
             if Stock.validTicker(validStr):
                 return validStr
             else:
@@ -240,21 +240,22 @@ class UI:
         # get ticker
         ticker = self.getValidTicker("Please provide the ticker for the stock you would like to add: ")
         # get units
-        units = self.getValidNumberType("Please provide how many units of the stock you own: ", int, lowerLimit=0)
+        units = self.getValidType("Please provide how many units of the stock you own: ", int, lowerLimit=0)
         # get target allocation percent
-        percent = self.getValidNumberType("Please provide the target percent allocation for this stock: ", float, lowerLimit=0, upperLimit=1)
+        percent = self.getValidType("Please provide the target percent allocation for this stock: ", float, lowerLimit=0, upperLimit=1)
 
         self.manager.addStockToPortfolio(ticker, units, percent)
         
         if not self.manager.portfolioPercentValid():
             self.UIresetTargetPercentAllocation()
+        print(f"Stock {ticker} successfully added!")
 
     def UIresetTargetPercentAllocation(self) -> None:
         while not self.manager.portfolioPercentValid():
             print("The percent you provided will make the portfolio invalid.")
             print("Please provide new target percentages for each stock.")
             for stock in self.manager.currentPortfolio.stocks:
-                newTargetPercent = self.getValidNumberType(f"Please provide a new target allocation percent for {stock.ticker}", float)
+                newTargetPercent = self.getValidType(f"Please provide a new target allocation percent for {stock.ticker}: ", float)
                 stock.percent = newTargetPercent
             print(f"New total percent is {round(self.manager.currentPortfolio.getTotalPercent())}")
 
@@ -273,7 +274,7 @@ class UI:
         ticker = self.getValidTicker("Please provide the ticker for the stock you would like to buy: ")
         stock = self.manager.getStock(ticker)
 
-        newUnits = self.getValidNumberType("How many new units are you purchasing?: ", int)
+        newUnits = self.getValidType("How many new units are you purchasing?: ", int)
         stock.units += newUnits
         print(f"New units added to stock {ticker}.")
 
@@ -282,7 +283,7 @@ class UI:
         ticker  = self.getValidTicker("Please provide the ticker for the stock you would like to sell: ")
         stock = self.manager.getStock(ticker)
 
-        unitsToSell = self.getValidNumberType("How many units would you like to sell?: ", int)
+        unitsToSell = self.getValidType("How many units would you like to sell?: ", int)
         if unitsToSell > stock.units:
             print("The number of units you would like to sell are more than what you have currently.")
             print("This will cause the stock to be removed from the portfolio.")
@@ -299,7 +300,7 @@ class UI:
             print("Not overwritting the file will cause a new one to be created using the current date.")
             overwrite = self.getConfirmation("Would you like to overwrite the current file? (y/n): ")
             self.manager.savePortfolio(Path(__file__).name, overwrite)
-        pass
+        self.clearScreen()
 
     def clearScreen(self) -> None:
         command = 'cls' if os.name == 'nt' else 'clear'
