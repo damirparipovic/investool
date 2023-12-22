@@ -2,8 +2,7 @@ import yfinance as yf
 import re
 import requests
 
-FORM="""
--------------------
+FORM="""-------------------
 Stock ticker: {}
  - price: {}
  - units: {}

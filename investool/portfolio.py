@@ -55,6 +55,9 @@ class Portfolio:
             raise ValueError("totalValue cannot be negative. Must be at least 0.")
         self._totalValue = totalValue
 
+    def getTotalPercent(self) -> float:
+        return sum(stock.percent for stock in self.stocks)
+
     def getStockTickers(self) -> list[str]:
         return [stock.ticker for stock in self._stocks]
 

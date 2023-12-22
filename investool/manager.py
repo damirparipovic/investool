@@ -2,8 +2,6 @@ import datetime
 from pathlib import Path
 import pickle
 
-from _pytest.config import filename_arg
-
 from portfolio import Portfolio
 from stock import Stock
 
@@ -65,7 +63,7 @@ class PortfolioManager():
     def savePortfolio(self, fileName: str, overwrite: bool=False) -> bool:
         currFilePath = self.getFilePath(fileName)
         if currFilePath.exists() and not overwrite:
-            timeStamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            timeStamp = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
             newFileName = f"{fileName}_{timeStamp}"
             currFilePath = self.getFilePath(newFileName)
 
@@ -76,8 +74,11 @@ class PortfolioManager():
         except IOError:
             return False
 
-    def validPercentageTotal(self) -> bool:
-        if int(self.currentPortfolio.getTotalPercent()):
+    def portfolioPercentValid(self) -> bool:
+        currentPercentTotal = self.currentPortfolio.getTotalPercent()
+        if currentPercentTotal > 1:
+            return False
+        if round(currentPercentTotal) != 1:
             return False
         return True
 
@@ -86,7 +87,6 @@ class PortfolioManager():
             raise ValueError("Percent for any one stock cannot be > 100.")
         self.currentPortfolio.getStock(stockTicker).percent = percent
 
-    # rebalance portfolio
     def _calculateAllocationDifference(self) -> dict[Stock, int]:
         # calculate how many units need to be sold (-ve val) and 
         # purchased (+ve val)
@@ -134,7 +134,6 @@ class PortfolioManager():
                 units = int(totalCash/stock.price)
             totalCash -= units * stock.price
             finalBuyList.append((stock, units))
-        print(totalCash)
 
         return dict(sellList + finalBuyList)
 

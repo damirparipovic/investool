@@ -1,3 +1,4 @@
+from pathlib import Path
 import manager
 from portfolio import Portfolio
 from stock import Stock
@@ -100,10 +101,10 @@ class UI:
         print(" 2 - rebalance portfolio (sell/buy)")
         print(" 3 - rebalance portfolio (buy only)")
         print(" 4 - add stock")
-        print(" 5 - remove stock")
+        print(" 5 - modify stock")
         print(" 6 - buy stock")
         print(" 7 - sell stock")
-        print(" 8 - go back to startup menu")
+        print(" 8 - go back (save optional)")
         print(" 9 - Exit")
 
         while True:
@@ -119,7 +120,7 @@ class UI:
                 break
         return choice
 
-    def printCurrentPortfolioInformation(self) -> None:
+    def UIprintCurrentPortfolioInformation(self) -> None:
         stockList = self.manager.currentPortfolio.stocks
         # if no portfolio chosen and currently have new portfolio
         if self.manager.currentPortfolio == Portfolio():
@@ -130,10 +131,10 @@ class UI:
             print(stock)
         print(f"Total portfolio value: {self.manager.currentPortfolio.totalValue}")
 
-    def getConfirmation(self) -> bool:
+    def getConfirmation(self, inputMessage) -> bool:
         while True:
             try:
-                inp = str(input("Would you like to continue with this rebalancing? (y/n): ")).lower()
+                inp = str(input(inputMessage)).lower()
             except (TypeError, ValueError):
                 print("The input provided is invalid. Please try again.")
                 continue
@@ -142,6 +143,25 @@ class UI:
                     return True
                 else:
                     return False
+
+    def getValidNumberType(self, inputMessage: str, wantedType: type, lowerLimit: float=float('-inf'), upperLimit: float=float('inf')) -> float:
+        while True:
+            try:
+                inputValue = input(inputMessage)
+                if inputValue == '' or inputValue == '\n':
+                    inputValue = 0
+                    break
+                else:
+                    inputValue = wantedType(inputValue)
+            except (ValueError, TypeError):
+                print(f"The provided value is not input. Provide a valid value of type {wantedType}.")
+                continue
+            isNumberType = type(inputValue) == float or type(inputValue) == int
+            if isNumberType and (inputValue < lowerLimit or inputValue > upperLimit):
+                print(f"Provided value is not within limits of {lowerLimit} {upperLimit}.")
+            else:
+                break
+        return inputValue
 
     def printHowUnitsHaveToChange(self, stockUnitMap: dict[Stock, int]) -> None:
         print()
@@ -156,49 +176,129 @@ class UI:
                 print(f"  - {stock.ticker} buy {units} units.")
 
     def UIrebalancePortfolioBuySell(self) -> None:
-        print(" -- Rebalancing Portfolio -- ")
+        print(" -- Rebalancing Portfolio (sell then buy) -- ")
         print()
-        while True:
-            try:
-                liquidCash = input("Provide how much liquid cash is available for rebalancing: ")
-                if liquidCash == '' or liquidCash == '\n':
-                    liquidCash = 0
-                    break
-                else:
-                    liquidCash = int(liquidCash)
-            except (ValueError, TypeError):
-                print("The provided value is not valid.")
-                continue
-            if liquidCash < 0:
-                print("Cannot have negative values of liquidCash.")
-            else:
-                break
+        inputMessage = "Provide how much liquid cash is available for rebalancing: "
+        liquidCash = self.getValidNumberType(inputMessage, float, lowerLimit=0)
 
         stocksUnitDifferences = self.manager.calculateRebalanceSellBuy(liquidCash)
-        print(stocksUnitDifferences)
         self.printHowUnitsHaveToChange(stocksUnitDifferences)
 
-        if self.getConfirmation():
+        if self.getConfirmation("Would you like to continue with this rebalancing? (y/n): "):
             self.manager.rebalanceSellBuy(liquidCash)
             remainingCash = self.manager.cashRemaining(stocksUnitDifferences, liquidCash)
-            print(f"Cash Remaining is after rebalancing is: {remainingCash}")
+            print(f"Cash Remaining is after rebalancing is: {remainingCash:.2f}")
         else:
             print("Did not rebalance.")
         print("Returning to previous menu.")
         
     def UIrebalancePortfolioBuyOnly(self) -> None:
-        pass
+        print(" -- Rebalancing Portfolio (buy only) -- ")
+        print()
+        inputMessage = "Provide how much liquid cash is available for rebalancing: "
+        liquidCash = self.getValidNumberType(inputMessage, float, lowerLimit=0)
+
+        stocksUnitDifferences = self.manager.calculateRebalanceBuyOnly(liquidCash)
+        self.printHowUnitsHaveToChange(stocksUnitDifferences)
+
+        if self.getConfirmation("Would you like to continue with this rebalancing? (y/n): "):
+            self.manager.rebalanceBuyOnly(liquidCash)
+            remainingCash = self.manager.cashRemaining(stocksUnitDifferences, liquidCash)
+            print(f"Cash Remaining is after rebalancing is: {remainingCash:.2f}")
+        else:
+            print("Did not rebalance.")
+        print("Returning to previous menu.")
+
+    def getValidTicker(self) -> str:
+        while True:
+            inputMessage = "Please provide a valid ticker: "
+            validStr = self.getValidNumberType(inputMessage, str)
+
+            if Stock.validTicker(validStr):
+                return validStr
+            else:
+                print("The provided ticker format is not valid.")
+                continue
+
+    def getStockThatExists(self, currTicker: str) -> Stock:
+        while True:
+            try:
+                stock = self.manager.getStock(currTicker)
+            except ValueError:
+                print(f"The ticker provided ({currTicker}) does not exist in the portfolio.")
+                print("Here are the stocks currently in the portfolio.")
+                allTickers = self.manager.currentPortfolio.getStockTickers()
+                for ticker in allTickers:
+                    print(f"{ticker} ", end='')
+                currTicker = self.getValidTicker("Please choose a ticker from the list above: ")
+                continue
+            else:
+                return stock
 
     def UIaddStock(self) -> None:
-        pass
+        print("  -- Add Stock -- ")
+        # get ticker
+        ticker = self.getValidTicker("Please provide the ticker for the stock you would like to add: ")
+        # get units
+        units = self.getValidNumberType("Please provide how many units of the stock you own: ", int, lowerLimit=0)
+        # get target allocation percent
+        percent = self.getValidNumberType("Please provide the target percent allocation for this stock: ", float, lowerLimit=0, upperLimit=1)
+
+        self.manager.addStockToPortfolio(ticker, units, percent)
+        
+        if not self.manager.portfolioPercentValid():
+            self.UIresetTargetPercentAllocation()
+
+    def UIresetTargetPercentAllocation(self) -> None:
+        while not self.manager.portfolioPercentValid():
+            print("The percent you provided will make the portfolio invalid.")
+            print("Please provide new target percentages for each stock.")
+            for stock in self.manager.currentPortfolio.stocks:
+                newTargetPercent = self.getValidNumberType(f"Please provide a new target allocation percent for {stock.ticker}", float)
+                stock.percent = newTargetPercent
+            print(f"New total percent is {round(self.manager.currentPortfolio.getTotalPercent())}")
 
     def UIremoveStock(self) -> None:
-        pass
+        print(" -- Remove Stock -- ")
+        # get ticker
+        ticker = self.getValidTicker("Please provide a ticker of a stock to remove from portoflio: ")
+        if self.getConfirmation(f"Would you like to remove this stock ({ticker}) (y/n)?:"):
+            print(f"Removing stock {ticker}")
+            self.manager.removeStockFromPortfolio(ticker)
+        else:
+            print("Did not remove stock, returning to previous menu.")
 
     def UIbuyStock(self) -> None:
-        pass
+        print(" -- Buy stock -- ")
+        ticker = self.getValidTicker("Please provide the ticker for the stock you would like to buy: ")
+        stock = self.manager.getStock(ticker)
+
+        newUnits = self.getValidNumberType("How many new units are you purchasing?: ", int)
+        stock.units += newUnits
+        print(f"New units added to stock {ticker}.")
 
     def UIsellStock(self) -> None:
+        print(" -- Sell Stock -- ")
+        ticker  = self.getValidTicker("Please provide the ticker for the stock you would like to sell: ")
+        stock = self.manager.getStock(ticker)
+
+        unitsToSell = self.getValidNumberType("How many units would you like to sell?: ", int)
+        if unitsToSell > stock.units:
+            print("The number of units you would like to sell are more than what you have currently.")
+            print("This will cause the stock to be removed from the portfolio.")
+            if self.getConfirmation(f"Would you like to remove the stock {ticker}"):
+                self.manager.removeStockFromPortfolio(ticker)
+            else:
+                print("No changes made. Returning to previous menu.")
+        else:
+            stock.units -= unitsToSell
+            print(f"Removed {unitsToSell} from {stock.ticker}. Have {stock.units} units remaining.")
+
+    def UIsaveAllChanges(self) -> None:
+        if self.getConfirmation("Would you like to save all changes? (y/n): "):
+            print("Not overwritting the file will cause a new one to be created using the current date.")
+            overwrite = self.getConfirmation("Would you like to overwrite the current file? (y/n): ")
+            self.manager.savePortfolio(Path(__file__).name, overwrite)
         pass
 
     def clearScreen(self) -> None:
@@ -240,7 +340,7 @@ class UI:
                 self.clearScreen()
                 match mainChoice:
                     case 1:
-                        self.printCurrentPortfolioInformation()
+                        self.UIprintCurrentPortfolioInformation()
                     case 2:
                         self.UIrebalancePortfolioBuySell()
                     case 3:
@@ -254,9 +354,11 @@ class UI:
                     case 7:
                         self.UIsellStock()
                     case 8:
-                        break # break out and go back to startupMenu
+                        print("Exiting to previous menu.")
+                        self.UIsaveAllChanges()
+                        break
                     case 9:
-                        print("Exiting Application")
+                        print("Exiting Application (no saves)")
                         exit(0)
                     case _:
                         exit(1)
