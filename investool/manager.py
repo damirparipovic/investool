@@ -78,8 +78,8 @@ class PortfolioManager():
         currentPercentTotal = self.currentPortfolio.getTotalPercent()
         if currentPercentTotal > 1:
             return False
-        # if round(currentPercentTotal) != 1:
-        #     return False
+        if round(currentPercentTotal, 2) != 1.0:
+            return False
         return True
 
     def changePercentage(self, stockTicker: str, percent: float) -> None:
