@@ -47,7 +47,7 @@ class UI:
 
     def listPortfolios(self) -> list[str]:
         # shows list of portfolios and returns the list
-        listOfPortfolios = os.listdir(self.manager.DEFAULTPATH)
+        listOfPortfolios = os.listdir(self.manager.DEFAULT_PATH)
         print("List of portfolios available:")
         if len(listOfPortfolios) == 0:
             print(" empty")

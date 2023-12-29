@@ -154,7 +154,7 @@ def test_loadPortfolio(standard_manager_path):
     assert res == True
 
     new_manager = PortfolioManager()
-    new_manager.DEFAULTPATH = standard_manager_path.DEFAULTPATH
+    new_manager.DEFAULT_PATH = standard_manager_path.DEFAULTPATH
     new_manager.loadPortfolio(test_file)
 
     assert new_manager.currentPortfolio == standard_manager_path.currentPortfolio

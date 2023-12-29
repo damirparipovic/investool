@@ -7,8 +7,9 @@ from stock import Stock
 
 class PortfolioManager():
 
-    MANAGER_LOCATION = Path(__file__).absolute().parent
-    DEFAULTPATH = Path(MANAGER_LOCATION, "..", "portfolios")
+    MANAGER_LOCATION = Path(__file__).absolute()
+    DEFAULT_DIRECTORY = "portfolios"
+    DEFAULT_PATH = Path(MANAGER_LOCATION.parent, "..", DEFAULT_DIRECTORY)
 
     def __init__(self, portfolio=Portfolio()):
         self._currentPortfolio = portfolio
@@ -43,7 +44,7 @@ class PortfolioManager():
     def getFilePath(self, fileName: str) -> Path:
         if not fileName.endswith('.pickle'):
             fileName = fileName + '.pickle'
-        return Path(self.DEFAULTPATH, fileName)
+        return Path(self.DEFAULT_PATH, fileName)
 
     def loadPortfolio(self, fileName: str) -> bool:
         currFilePath = self.getFilePath(fileName)
@@ -59,6 +60,10 @@ class PortfolioManager():
     def checkFileExists(self, fileName: str) -> bool:
         currFilePath = self.getFilePath(fileName)
         return currFilePath.exists()
+
+    @classmethod
+    def checkDirectoryExists(self, directoryName: Path=DEFAULT_PATH) -> bool:
+        return directoryName.exists()
 
     def savePortfolio(self, fileName: str, overwrite: bool=False) -> bool:
         currFilePath = self.getFilePath(fileName)
