@@ -1,2 +1,2 @@
-# investool2
+# investool
 second make of investool
