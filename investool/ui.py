@@ -212,6 +212,7 @@ class UI:
             self.manager.addStockToPortfolio(ticker, units, percent)
         else:
             print("Did not add the stock, returning to previous menu.")
+        return
 
     def _resetTargetPercentAllocation(self) -> None:
         while not self.manager.portfolioPercentValid():

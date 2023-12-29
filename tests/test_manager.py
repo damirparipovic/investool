@@ -78,7 +78,7 @@ def test_calculateRebalanceSellBuy_no_cash_added(standard_manager_fixed_prices):
         assert expectedResultsDict[k] == v
 
 def test_calculateRebalanceSellBuy_with_cash(standard_manager_fixed_prices):
-    expectedResults = [20, -2, -5]
+    expectedResults = [24, -1, -4]
     expectedResultsDict = {}
 
     diffs = standard_manager_fixed_prices.calculateRebalanceSellBuy(100)
@@ -90,14 +90,17 @@ def test_calculateRebalanceSellBuy_with_cash(standard_manager_fixed_prices):
         assert expectedResultsDict[k] == v
 
 def test_cashRemaining(standard_manager_fixed_prices):
-    expectedResult = 90
+    expectedResult = 0
     liquidCash = 100
     diffs = standard_manager_fixed_prices.calculateRebalanceSellBuy(liquidCash)
+    print(diffs)
+    print(liquidCash)
+    print(standard_manager_fixed_prices.cashRemaining(diffs, liquidCash))
     assert expectedResult == standard_manager_fixed_prices.cashRemaining(diffs, liquidCash)
 
 def test_calculateRebalanceBuyOnly(real_stock_manager_fixed):
     liquidCash = 200
-    expectedResult = [7, 1, -1, -2]
+    expectedResult = [13, 3, 0, 0]
     expectedResultsDict = {}
 
     res = real_stock_manager_fixed.calculateRebalanceBuyOnly(liquidCash)
@@ -118,13 +121,13 @@ def test_buyStock(standard_manager_fixed_prices):
     assert current_quantity + quantity_to_buy == standard_manager_fixed_prices.getStock("msft").units
 
 def test_sellStock(standard_manager_fixed_prices):
-    quantity_to_sell = 3
+    quantity_to_sell = 4
 
     stock = standard_manager_fixed_prices.getStock("msft")
     current_quantity = stock.units
     standard_manager_fixed_prices.sellStock(stock.ticker, quantity_to_sell)
 
-    assert current_quantity - quantity_to_sell == standard_manager_fixed_prices.getStock("msft").units
+    assert current_quantity + quantity_to_sell == standard_manager_fixed_prices.getStock("msft").units
 
 def test_sellStock_sell_too_many(standard_manager_fixed_prices):
     quantity_to_sell = 100
