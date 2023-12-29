@@ -1,7 +1,7 @@
 # extra config and extra files
 work-flow.txt
 pyrightconfig.json
-portfolios/*
+portfolios/*.pickle
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
