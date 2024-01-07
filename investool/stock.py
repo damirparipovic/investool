@@ -5,6 +5,7 @@ import requests
 FORM="""-------------------
 Stock ticker: {}
  - price: {}
+ - currecny: {}
  - units: {}
  - percent: {}
  - value: {}
@@ -13,24 +14,26 @@ Stock ticker: {}
 TICKER_PATTERN = "[a-zA-Z]{1,4}(\.[a-zA-Z]{0,2})?"
 
 class Stock:
-    def __init__(self, ticker='', price=0.0, units=0, percent=0.0, stockValue=0.0) -> None:
+    def __init__(self, ticker='', price=0.0, currency='',  units=0, percent=0.0, stockValue=0.0) -> None:
         self._ticker: str = ticker
         self._price: float = price
+        self._currency: str = currency
         self._units: int = units
         self._percent: float = percent
         self._stockValue: float = stockValue
 
     def __str__(self) -> str:
-        return FORM.format(self._ticker, self._price, self._units, self._percent, self._stockValue)
+        return FORM.format(self._ticker, self._price, self._currency, self._units, self._percent, self._stockValue)
 
     def __repr__(self) -> str:
-        return f"Stock('{self._ticker}', {self._price}, {self._units}, {self._percent}, {self._stockValue})"
+        return f"Stock('{self._ticker}', {self._price}, '{self._currency}', {self._units}, {self._percent}, {self._stockValue})"
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, Stock):
             return NotImplemented
         if (self._ticker == other._ticker and
             self._price == other._price and
+            self._currency == other._currency and
             self._units == other._units and
             self._percent == other._percent and
             self._stockValue == other._stockValue):
@@ -38,7 +41,7 @@ class Stock:
         return False
 
     def __hash__(self) -> int:
-        return hash((self._ticker, self._price, self._units, self._percent, self._stockValue))
+        return hash((self._ticker, self._price, self._currency, self._units, self._percent, self._stockValue))
 
     @property
     def ticker(self) -> str:
@@ -59,6 +62,14 @@ class Stock:
         if value < 0:
             raise ValueError("Price can't be set to less than 0.")
         self._price = value
+
+    @property
+    def currency(self) -> str:
+        return self._currency
+
+    @currency.setter
+    def currency(self, currency: str) -> None:
+        self._currency = currency
 
     @property
     def units(self) -> int:
@@ -92,7 +103,7 @@ class Stock:
             raise ValueError("Stock can't have a value less than 0.")
         self._stockValue = value
 
-    def getCurrentPrice(self) -> float | None:
+    def getCurrentPrice(self) -> tuple[float, str] | None:
         currentPrice = None
         try:
             stockInfo = yf.Ticker(self.ticker).fast_info
@@ -105,10 +116,13 @@ class Stock:
         except KeyError:
             return None
         else:
+            if self.currency == '':
+                self.currency = stockInfo.get("currency")
             return currentPrice
 
     def updatePrice(self) -> None:
         currentPrice = self.getCurrentPrice()
+
         if currentPrice == None:
             return
         self.price = currentPrice

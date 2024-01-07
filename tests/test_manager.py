@@ -9,13 +9,12 @@ def standard_manager(standard_portfolio):
 @pytest.fixture(scope="function")
 def standard_manager_path(tmp_path, standard_manager):
     test_dir = "temp_portfolios"
-
+ 
     d = tmp_path / test_dir
     d.mkdir()
 
-    standard_manager.DEFAULTPATH = d
+    standard_manager.DEFAULT_PATH = d
     return standard_manager
-
 
 @pytest.fixture
 def standard_manager_fixed_prices(standard_manager, mocker):
@@ -148,13 +147,14 @@ def test_loadPortfolio(standard_manager_path):
     test_file = "test_save_portfolio"
     with pytest.raises(FileNotFoundError):
         res = standard_manager_path.loadPortfolio(test_file)
+        assert 0
         assert res == False
 
     res = standard_manager_path.savePortfolio(test_file)
     assert res == True
 
     new_manager = PortfolioManager()
-    new_manager.DEFAULT_PATH = standard_manager_path.DEFAULTPATH
+    new_manager.DEFAULT_PATH = standard_manager_path.DEFAULT_PATH
     new_manager.loadPortfolio(test_file)
 
     assert new_manager.currentPortfolio == standard_manager_path.currentPortfolio

@@ -6,7 +6,7 @@ MSFT_STOCK_PRICE = 123.45
 
 @pytest.fixture()
 def msft_stock():
-    newStock = stock.Stock('msft', MSFT_STOCK_PRICE, 10, 0.3, 0)
+    newStock = stock.Stock('msft', MSFT_STOCK_PRICE, 'usd', 10, 0.3, 0)
     return newStock
 
 @pytest.fixture
@@ -14,11 +14,12 @@ def empty_stock():
     return stock.Stock()
 
 def test_repr_print(msft_stock):
-    assert repr(msft_stock) == "Stock('msft', 123.45, 10, 0.3, 0)"
+    assert repr(msft_stock) == "Stock('msft', 123.45, 'usd', 10, 0.3, 0)"
 
 def test_str_print(msft_stock):
     assert str(msft_stock) == stock.FORM.format(msft_stock.ticker,
                                                 msft_stock.price,
+                                                msft_stock.currency,
                                                 msft_stock.units,
                                                 msft_stock.percent,
                                                 msft_stock.stockValue)
@@ -40,7 +41,7 @@ def test_invalid_ticker(empty_stock):
 
 def test_equality(msft_stock):
     # equality assert empty_stock == stock.Stock()
-    assert msft_stock == stock.Stock('msft', 123.45, 10, 0.3, 0)
+    assert msft_stock == stock.Stock('msft', 123.45, 'usd', 10, 0.3, 0)
 
 def test_inequality_type(msft_stock):
     # test if not same type
@@ -51,17 +52,17 @@ def test_equality_two_stocks(empty_stock, msft_stock):
     assert empty_stock != msft_stock
 
 def test_equality_one_change(msft_stock):
-    assert msft_stock != stock.Stock('m', 123.45, 10, 0.3, 0)
-    assert msft_stock != stock.Stock('msft', 1.45, 10, 0.3, 0)
-    assert msft_stock != stock.Stock('msft', 123.45, 9, 0.3, 0)
-    assert msft_stock != stock.Stock('msft', 123.45, 10, 0.2, 0)
-    assert msft_stock != stock.Stock('msft', 123.45, 10, 0.3, 1)
+    assert msft_stock != stock.Stock('m', 123.45, 'usd', 10, 0.3, 0)
+    assert msft_stock != stock.Stock('msft', 1.45, 'usd', 10, 0.3, 0)
+    assert msft_stock != stock.Stock('msft', 123.45, 'usd', 9, 0.3, 0)
+    assert msft_stock != stock.Stock('msft', 123.45, 'usd', 10, 0.2, 0)
+    assert msft_stock != stock.Stock('msft', 123.45, 'usd', 10, 0.3, 1)
 
 def test_hash(msft_stock, empty_stock):
     assert hash(empty_stock) == hash(stock.Stock())
-    assert hash(msft_stock) == hash(stock.Stock('msft', 123.45, 10, 0.3, 0))
-    assert hash(msft_stock) != hash(stock.Stock('msft', 123.00, 10, 0.3, 0))
-    assert hash(msft_stock) != hash(stock.Stock('msft', 123.45, 9, 0.3, 0))
+    assert hash(msft_stock) == hash(stock.Stock('msft', 123.45, 'usd', 10, 0.3, 0))
+    assert hash(msft_stock) != hash(stock.Stock('msft', 123.00, 'usd', 10, 0.3, 0))
+    assert hash(msft_stock) != hash(stock.Stock('msft', 123.45, 'usd', 9, 0.3, 0))
 
 def test_price(msft_stock, empty_stock):
     assert msft_stock.price == MSFT_STOCK_PRICE
@@ -71,6 +72,9 @@ def test_price(msft_stock, empty_stock):
 
     with pytest.raises(ValueError):
         empty_stock.price = -20
+
+def test_currency(msft_stock, empty_stock):
+    pass
 
 def test_units(msft_stock, empty_stock):
     assert msft_stock.units == 10
