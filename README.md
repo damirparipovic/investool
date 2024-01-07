@@ -1,7 +1,7 @@
 # Investool
 
 ## Description
-**Investool** is a small, Python-based application designed to assist users in managing multiple stock portfolios. With Investool, users can effortlessly create new portfolios, add or remove stocks, and most importantly, it provides assistance in rebalancing portfolios. The rebalancing can be achieved through two approaches: either by buying more stocks or by a combination of selling and buying stocks.
+**Investool** is a small, Python-based application designed to assist users in managing multiple stock portfolios. With Investool, users can effortlessly create new portfolios, add or remove stocks, and most importantly, it provides assistance in rebalancing portfolios. The rebalancing can be achieved through two approaches: either by buying more stocks or by a combination of selling and buying stocks. Current version works when entire portfolio contains assets of the same currency.
 
 ## Installation Instructions
 To get started with Investool, follow these simple steps:
