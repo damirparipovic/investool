@@ -28,10 +28,10 @@ def standard_manager_fixed_prices(standard_manager, mocker):
 
 @pytest.fixture
 def real_stock_portfolio():
-    msft = Stock('msft', 0, 5, 0.25, 0)
-    aapl = Stock('aapl', 0, 5, 0.25, 0)
-    amzn = Stock('amzn', 0, 5, 0.25, 0)
-    nvda = Stock('nvda', 0, 5, 0.25, 0)
+    msft = Stock('msft', 0, 'USD', 5, 0.25, 0)
+    aapl = Stock('aapl', 0, 'USD', 5, 0.25, 0)
+    amzn = Stock('amzn', 0, 'USD', 5, 0.25, 0)
+    nvda = Stock('nvda', 0, 'USD', 5, 0.25, 0)
     stonks = [msft, aapl, amzn, nvda]
     return Portfolio("realStonks", stonks)
 
@@ -92,9 +92,9 @@ def test_cashRemaining(standard_manager_fixed_prices):
     expectedResult = 0
     liquidCash = 100
     diffs = standard_manager_fixed_prices.calculateRebalanceSellBuy(liquidCash)
-    print(diffs)
-    print(liquidCash)
-    print(standard_manager_fixed_prices.cashRemaining(diffs, liquidCash))
+    # print(diffs)
+    # print(liquidCash)
+    # print(standard_manager_fixed_prices.cashRemaining(diffs, liquidCash))
     assert expectedResult == standard_manager_fixed_prices.cashRemaining(diffs, liquidCash)
 
 def test_calculateRebalanceBuyOnly(real_stock_manager_fixed):
@@ -132,7 +132,7 @@ def test_sellStock_sell_too_many(standard_manager_fixed_prices):
     quantity_to_sell = 100
 
     stock = standard_manager_fixed_prices.getStock("msft")
-    current_quantity = stock.units
+    # current_quantity = stock.units
     standard_manager_fixed_prices.sellStock(stock.ticker, quantity_to_sell)
 
     assert 0 == standard_manager_fixed_prices.getStock("msft").units

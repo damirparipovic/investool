@@ -1,24 +1,26 @@
 from stock import Stock
 
 class Portfolio:
-    def __init__(self, portfolioName='', stocks=list(), totalValue=0.0):
+    def __init__(self, portfolioName='', stocks=list(), totalValue=0.0, portfolioCurrency='CAD'):
         self._portfolioName: str = portfolioName
         self._stocks: list[Stock] = stocks
         self._totalValue: float = totalValue
+        self._portfolioCurrency: str = portfolioCurrency
 
     def __str__(self) -> str:
-        form = "Portfolio: {}\n  - stocks: {}\n  - totalValue: {}"
-        return form.format(self._portfolioName, self._stocks, self._totalValue)
+        form = "Portfolio: {}\n  - stocks: {}\n  - totalValue: {}\n  - currency: {}"
+        return form.format(self._portfolioName, self._stocks, self._totalValue, self._portfolioCurrency)
 
     def __repr__(self) -> str:
-        return f"Portfolio('{self.portfolioName}', {self._stocks}, {self._totalValue})"
+        return f"Portfolio('{self.portfolioName}', {self._stocks}, {self._totalValue}, {self._portfolioCurrency})"
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, Portfolio):
             return NotImplemented
         if (self._portfolioName == other._portfolioName and
             self._stocks == other._stocks and
-            self._totalValue == other._totalValue):
+            self._totalValue == other._totalValue and 
+            self._portfolioCurrency == other._portfolioCurrency):
             return True
         else:
             return False
@@ -54,6 +56,16 @@ class Portfolio:
         if totalValue < 0.0:
             raise ValueError("totalValue cannot be negative. Must be at least 0.")
         self._totalValue = totalValue
+
+    @property
+    def portfolioCurrency(self) -> str:
+        return self._portfolioCurrency
+
+    @portfolioCurrency.setter
+    def portfolioCurrency(self, currency: str) -> None:
+        if not isinstance(currency, str):
+            raise TypeError("currency must be a str.")
+        self._portfolioCurrency = currency
 
     def getTotalPercent(self) -> float:
         return sum(stock.percent for stock in self.stocks)

@@ -10,6 +10,7 @@ class PortfolioManager():
     MANAGER_LOCATION = Path(__file__).absolute()
     DEFAULT_DIRECTORY = "portfolios"
     DEFAULT_PATH = Path(MANAGER_LOCATION.parent, "..", DEFAULT_DIRECTORY)
+    VALID_CURRENCIES = PortfolioManager._getValidCurrencies()
 
     def __init__(self, portfolio=Portfolio()):
         self._currentPortfolio = portfolio
@@ -23,7 +24,7 @@ class PortfolioManager():
         self._currentPortfolio = newPortfolio
 
     def createStock(self, ticker: str, units: int, percent: float) -> Stock:
-        newStock = Stock(ticker, 0, units, percent, 0);
+        newStock = Stock(ticker, 0, 'CAD', units, percent, 0);
         newStock.updatePrice()
         newStock.updateValue()
         return newStock
@@ -40,6 +41,9 @@ class PortfolioManager():
 
     def renamePortfolio(self, newName: str) -> None:
         self.currentPortfolio.portfolioName = newName
+
+    def changePortfolioCurrency(self, newCurrency: str) -> None:
+        self.currentPortfolio.portfolioCurrency = newCurrency
 
     def getFilePath(self, fileName: str) -> Path:
         if not fileName.endswith('.pickle'):
@@ -62,7 +66,7 @@ class PortfolioManager():
         return currFilePath.exists()
 
     @classmethod
-    def checkDirectoryExists(self, directoryName: Path=DEFAULT_PATH) -> bool:
+    def checkDirectoryExists(cls, directoryName: Path=DEFAULT_PATH) -> bool:
         return directoryName.exists()
 
     def savePortfolio(self, fileName: str, overwrite: bool=False) -> bool:
@@ -90,7 +94,7 @@ class PortfolioManager():
     def changePercentage(self, stockTicker: str, percent: float) -> None:
         if percent > 100:
             raise ValueError("Percent for any one stock cannot be > 100.")
-        self.currentPortfolio.getStock(stockTicker).percent = percent
+        self.getStock(stockTicker).percent = percent
 
     def _calculateAllocationDifference(self, liquidCash: float=0) -> dict[Stock, int]:
         # calculate how many units need to be sold (-ve val) and 
@@ -199,6 +203,8 @@ class PortfolioManager():
         stock = self.getStock(stockTicker)
         stock.units += quantity
 
+        return stock.units
+
     def sellStock(self, stockTicker: str, quantity) -> int:
         if stockTicker not in self.currentPortfolio.getStockTickers(): 
             raise ValueError(f"stock {stockTicker} is not in the portfolio")
@@ -208,3 +214,5 @@ class PortfolioManager():
             stock.units = 0
         else:
             stock.units += quantity
+
+        return stock.units

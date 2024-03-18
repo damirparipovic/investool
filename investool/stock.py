@@ -103,7 +103,7 @@ class Stock:
             raise ValueError("Stock can't have a value less than 0.")
         self._stockValue = value
 
-    def getCurrentPrice(self) -> tuple[float, str] | None:
+    def getCurrentPrice(self) -> float | None:
         currentPrice = None
         try:
             stockInfo = yf.Ticker(self.ticker).fast_info
@@ -117,7 +117,9 @@ class Stock:
             return None
         else:
             if self.currency == '':
-                self.currency = stockInfo.get("currency")
+                stockCurrency = stockInfo.get("currency")
+                if not (stockCurrency == None):
+                    self.currency = stockCurrency
             return currentPrice
 
     def updatePrice(self) -> None:
@@ -125,13 +127,14 @@ class Stock:
 
         if currentPrice == None:
             return
-        self.price = currentPrice
+        else:
+            self.price = currentPrice
 
     def updateValue(self) -> None:
         self.stockValue = self._price * self._units
 
     @classmethod
-    def validTicker(self, ticker: str) -> bool:
+    def validTicker(cls, ticker: str) -> bool:
         if len(ticker) < 1:
             return False
         res = re.match(TICKER_PATTERN, ticker)

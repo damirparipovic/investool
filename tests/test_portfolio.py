@@ -8,7 +8,7 @@ def standard_portfolio():
     stocks.append(Stock('msft', 10, 'USD', 10, 0.5, 0))
     stocks.append(Stock('appl', 20, 'USD',  10, 0.25, 0))
     stocks.append(Stock('zag.to', 30, 'CAD', 10, 0.25, 0))
-    port = Portfolio('test', stocks, 100.0)
+    port = Portfolio('test', stocks, 100.0, 'CAD')
     return port
 
 @pytest.fixture()
@@ -23,20 +23,21 @@ def test_portfolio_creation(standard_portfolio, empty_portfolio):
     assert standard_portfolio.stocks == [Stock('msft', 10, 'USD', 10, 0.5, 0), 
                                          Stock('appl', 20, 'USD', 10, 0.25, 0),
                                          Stock('zag.to', 30, 'CAD', 10, 0.25, 0)]
+    assert standard_portfolio.portfolioCurrency == 'CAD'
     assert standard_portfolio.totalValue == 100.0
 
 def test_portfolio_repr(empty_portfolio):
-    assert repr(empty_portfolio) == "Portfolio('', [], 0.0)"
+    assert repr(empty_portfolio) == "Portfolio('', [], 0.0, CAD)"
 
 def test_portfolio_str(empty_portfolio):
-    assert str(empty_portfolio) == "Portfolio: \n  - stocks: []\n  - totalValue: 0.0"
+    assert str(empty_portfolio) == "Portfolio: \n  - stocks: []\n  - totalValue: 0.0\n  - currency: CAD"
 
 def test_equality(standard_portfolio):
     stocks = []
     stocks.append(Stock('msft', 10, 'USD', 10, 0.5, 0))
     stocks.append(Stock('appl', 20, 'USD', 10, 0.25, 0))
     stocks.append(Stock('zag.to', 30, 'CAD', 10, 0.25, 0))
-    assert standard_portfolio == Portfolio('test', stocks, 100.0)
+    assert standard_portfolio == Portfolio('test', stocks, 100.0, 'CAD')
 
 def test_inequality_properties(standard_portfolio):
     assert standard_portfolio != '42'
