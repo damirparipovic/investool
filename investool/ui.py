@@ -67,6 +67,18 @@ class UI:
                 self.manager.renamePortfolio(newPortfolioName)
                 break
 
+        while True:
+            portfolioCurrency = input("Provide a currency code for the portfolio: ").lower()
+            if portfolioCurrency not in manager.VALID_CURRENCIES:
+                print("The provided currency is not in the list of valid currencies")
+                print("Here is the list of valid currencies:")
+                for currency in manager.VALID_CURRENCIES:
+                    print(f"{currency}, ", end="")
+                continue
+            else:
+                self.manager.changePortfolioCurrency(portfolioCurrency)
+                break
+
     def UIprintCurrentPortfolioInformation(self) -> None:
         stockList = self.manager.currentPortfolio.stocks
         # if no portfolio chosen and currently have new portfolio
@@ -77,6 +89,7 @@ class UI:
         for stock in stockList:
             print(stock)
         print(f"Total portfolio value: {self.manager.currentPortfolio.totalValue:.2f}")
+        print(f"Portfolio currency: {self.manager.currentPortfolio.portfolioCurrency}")
 
     def getConfirmation(self, inputMessage) -> bool:
         while True:
@@ -101,7 +114,7 @@ class UI:
                 else:
                     inputValue = wantedType(inputValue)
             except (ValueError, TypeError):
-                print(f"The provided value is not input. Provide a valid value of type {wantedType.__name__}.")
+                print(f"The provided value is not valid input. Provide a valid value of type {wantedType.__name__}.")
                 continue
             else:
                 isNumberType = type(inputValue) == float or type(inputValue) == int
@@ -268,9 +281,10 @@ class UI:
 
     def UIsaveAllChanges(self) -> None:
         if self.getConfirmation("Would you like to save all changes? (y/N): "):
+            print("------")
             print("Not overwritting the file will cause a new one to be created using the current date.")
             overwrite = self.getConfirmation("Would you like to overwrite the current file? (y/N): ")
-            self.manager.savePortfolio(Path(__file__).name, overwrite)
+            self.manager.savePortfolio(overwrite=overwrite)
         self.clearScreen()
 
     def clearScreen(self) -> None:
@@ -310,7 +324,7 @@ class UI:
         print(" 6 - change target allocations")
         print(" 7 - buy stock")
         print(" 8 - sell stock")
-        print(" 9 - go back (save optional)")
+        print(" 9 - go back and save portfolio")
         print(" 10 - Exit")
 
         getValidChoice = self.getValidType("Provide your choice: ", int, lowerLimit=1, upperLimit=10)

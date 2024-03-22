@@ -1,16 +1,17 @@
 import datetime
+import requests
 from pathlib import Path
 import pickle
 
 from portfolio import Portfolio
 from stock import Stock
+from constants import VALID_CURRENCIES
 
 class PortfolioManager():
 
     MANAGER_LOCATION = Path(__file__).absolute()
     DEFAULT_DIRECTORY = "portfolios"
     DEFAULT_PATH = Path(MANAGER_LOCATION.parent, "..", DEFAULT_DIRECTORY)
-    VALID_CURRENCIES = PortfolioManager._getValidCurrencies()
 
     def __init__(self, portfolio=Portfolio()):
         self._currentPortfolio = portfolio
@@ -23,15 +24,16 @@ class PortfolioManager():
     def currentPortfolio(self, newPortfolio:Portfolio) -> None:
         self._currentPortfolio = newPortfolio
 
-    def createStock(self, ticker: str, units: int, percent: float) -> Stock:
-        newStock = Stock(ticker, 0, 'CAD', units, percent, 0);
+    def createStock(self, ticker: str, units: int, percent: float, currency: str = 'CAD') -> Stock:
+        newStock = Stock(ticker, 0, currency, units, percent, 0);
         newStock.updatePrice()
         newStock.updateValue()
         return newStock
 
-    def addStockToPortfolio(self, ticker: str, units: int, percent: float) -> None:
-        newStock = self.createStock(ticker, units, percent)
+    def addStockToPortfolio(self, ticker: str, units: int, percent: float, currency: str = 'CAD') -> None:
+        newStock = self.createStock(ticker, units, percent, currency)
         self.currentPortfolio.addStock(newStock)
+        self.currentPortfolio.updatePortfolio()
 
     def removeStockFromPortfolio(self, ticker: str) -> None:
         if ticker not in self.currentPortfolio.getStockTickers():
@@ -43,7 +45,14 @@ class PortfolioManager():
         self.currentPortfolio.portfolioName = newName
 
     def changePortfolioCurrency(self, newCurrency: str) -> None:
+        if newCurrency.lower() not in VALID_CURRENCIES:
+            raise ValueError("The provided currency is invalid.")
         self.currentPortfolio.portfolioCurrency = newCurrency
+
+    def changePercentage(self, stockTicker: str, percent: float) -> None:
+        if percent > 100:
+            raise ValueError("Percent for any one stock cannot be > 100.")
+        self.getStock(stockTicker).percent = percent
 
     def getFilePath(self, fileName: str) -> Path:
         if not fileName.endswith('.pickle'):
@@ -69,7 +78,9 @@ class PortfolioManager():
     def checkDirectoryExists(cls, directoryName: Path=DEFAULT_PATH) -> bool:
         return directoryName.exists()
 
-    def savePortfolio(self, fileName: str, overwrite: bool=False) -> bool:
+    def savePortfolio(self, fileName: str="new_portfolio", overwrite: bool=False) -> bool:
+        if self.currentPortfolio.portfolioName:
+            fileName = self.currentPortfolio.portfolioName
         currFilePath = self.getFilePath(fileName)
         if currFilePath.exists() and not overwrite:
             timeStamp = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
@@ -91,10 +102,16 @@ class PortfolioManager():
             return False
         return True
 
-    def changePercentage(self, stockTicker: str, percent: float) -> None:
-        if percent > 100:
-            raise ValueError("Percent for any one stock cannot be > 100.")
-        self.getStock(stockTicker).percent = percent
+    def getAdjustedPrice(self, stock: Stock) -> float:
+
+        if self.currentPortfolio.portfolioCurrency == stock.currency:
+            return stock.price
+        else:
+            try:
+                exchangeRate = self.currentPortfolio.getCurrencyExchange(stock.currency, self.currentPortfolio.portfolioCurrency)
+            except requests.RequestException:
+                exchangeRate = 1
+            return stock.price * exchangeRate
 
     def _calculateAllocationDifference(self, liquidCash: float=0) -> dict[Stock, int]:
         # calculate how many units need to be sold (-ve val) and 
@@ -107,7 +124,7 @@ class PortfolioManager():
         # percent of totalValue
         stocksUnitDifference = {}
         for stock in self.currentPortfolio.stocks:
-            newUnitCount = round((stock.percent * totalValue) / stock.price)
+            newUnitCount = round((stock.percent * totalValue) / self.getAdjustedPrice(stock))
             stockUnitDiff = newUnitCount - stock.units
             stocksUnitDifference[stock] = stockUnitDiff
         return stocksUnitDifference
@@ -133,15 +150,15 @@ class PortfolioManager():
 
         totalCash = liquidCash
         for stock, units in sellList:
-            totalCash += (-1 * units) * stock.price
+            totalCash += (-1 * units) * self.getAdjustedPrice(stock)
             
         # need a new buyList because values could change, depending on price
         finalBuyList = []
         for stock, units in buyList:
-            cost = units * stock.price
+            cost = units * self.getAdjustedPrice(stock)
             if cost > totalCash:
-                units = int(totalCash/stock.price)
-            totalCash -= units * stock.price
+                units = int(totalCash / self.getAdjustedPrice(stock))
+            totalCash -= units * self.getAdjustedPrice(stock)
             finalBuyList.append((stock, units))
 
         return dict(sellList + finalBuyList)
@@ -158,11 +175,11 @@ class PortfolioManager():
         for i in range(len(buyList)):
             stock = buyList[i][0]
             units = buyList[i][1]
-            cashNeeded = units * stock.price
+            cashNeeded = units * self.getAdjustedPrice(stock)
             
             if cashNeeded > liquidCash:
-                units = int(liquidCash/stock.price)
-            liquidCash -= units * stock.price
+                units = int(liquidCash / self.getAdjustedPrice(stock))
+            liquidCash -= units * self.getAdjustedPrice(stock)
             modifiedBuyList.append((stock, units))
 
         return dict(modifiedBuyList)
@@ -170,7 +187,7 @@ class PortfolioManager():
     def cashRemaining(self, buySellMap: dict[Stock, int], liquidCash: float = 0.0) -> float:
         rem = liquidCash
         for stock, units in buySellMap.items():
-            rem -= units * stock.price
+            rem -= units * self.getAdjustedPrice(stock)
         return rem
 
     def rebalanceSellBuy(self, liquidCash: float = 0.0):

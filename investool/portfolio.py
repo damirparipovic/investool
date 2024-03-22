@@ -1,4 +1,8 @@
+import requests
+
 from stock import Stock
+from constants import API_URL
+from datetime import date
 
 class Portfolio:
     def __init__(self, portfolioName='', stocks=list(), totalValue=0.0, portfolioCurrency='CAD'):
@@ -6,6 +10,7 @@ class Portfolio:
         self._stocks: list[Stock] = stocks
         self._totalValue: float = totalValue
         self._portfolioCurrency: str = portfolioCurrency
+        self._currencyExchangeCache: dict = {}
 
     def __str__(self) -> str:
         form = "Portfolio: {}\n  - stocks: {}\n  - totalValue: {}\n  - currency: {}"
@@ -76,6 +81,7 @@ class Portfolio:
     def addStock(self, stock: Stock) -> None:
         if stock.ticker not in self.getStockTickers():
             stock.updatePrice()
+            stock.updateValue()
             self._stocks.append(stock)
 
     def removeStock(self, ticker: str) -> None:
@@ -92,6 +98,32 @@ class Portfolio:
     def updateAllStockValues(self) -> None:
         for stock in self._stocks:
             stock.updateValue()
+            if stock.currency != self.portfolioCurrency:
+                exchangeRate = self.getCurrencyExchange(stock.currency, self.portfolioCurrency)
+                stock.stockValue *= exchangeRate
+
+    def currencyUpToDate(self, currency: str) -> bool:
+        today = date.today().strftime("%Y-%m-%d")
+        return self._currencyExchangeCache[currency.lower()]['date'] == today
+
+    def getCurrencyExchange(self, currency1: str, currency2: str) -> float:
+        currency1 = currency1.lower()
+        currency2 = currency2.lower()
+        # if cache isn't up to date, update it accordingly
+        if currency1 not in self._currencyExchangeCache or not self.currencyUpToDate(currency1):
+            inp2 = "currencies/" + currency1 + ".json"
+            response = requests.get(API_URL.format(inp2))
+            if response.status_code == 200: 
+                data = response.json()
+                self._currencyExchangeCache[currency1] = data
+            else:
+                raise requests.RequestException("There was an error with getting the request.")
+
+        # return the correct currency exchange rate from currency1 to currency2
+        # ex: USD -> CAD being 1.34 means for 1 USD you get 1.34 CAD
+        exchangeRate = self._currencyExchangeCache[currency1][currency1][currency2]
+
+        return exchangeRate
 
     def updateTotalPortfolioValue(self, updatePrices:bool=True, updateValues:bool=True) -> None:
         if updatePrices:

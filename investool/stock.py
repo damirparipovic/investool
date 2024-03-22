@@ -116,10 +116,9 @@ class Stock:
         except KeyError:
             return None
         else:
-            if self.currency == '':
-                stockCurrency = stockInfo.get("currency")
-                if not (stockCurrency == None):
-                    self.currency = stockCurrency
+            stockCurrency = stockInfo.get("currency")
+            if stockCurrency:
+                self.currency = stockCurrency
             return currentPrice
 
     def updatePrice(self) -> None:

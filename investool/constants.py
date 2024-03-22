@@ -1,9 +1,8 @@
 import requests
 # https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@{date}/{apiVersion}/{endpoint}
-API_URL = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@{}/V1/{}"
-VALID_CURRENCIES = API_URL.format("latest", "currencies.json")
+API_URL = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/{}"
 
-response = requests.get(API_URL.format("latest", "currencies.json"))
+response = requests.get(API_URL.format("currencies.json"))
 
 if response.status_code == 200:
     json_data = response.json()
